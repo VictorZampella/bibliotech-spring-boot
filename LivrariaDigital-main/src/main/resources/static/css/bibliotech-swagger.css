@@ -1,0 +1,143 @@
+/* BiblioTech theme: colors drawn from the neon book banner. */
+:root {
+  --bibliotech-ink: #202238;
+  --bibliotech-cyan: #11d5e8;
+  --bibliotech-cyan-deep: #087f99;
+  --bibliotech-violet: #8a62f5;
+  --bibliotech-violet-deep: #5534b7;
+  --bibliotech-night: #080a12;
+  --bibliotech-canvas: #f2f3f8;
+  --bibliotech-banner-image: url('/images/Banner%20biblioteca.jpeg');
+}
+
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  color: var(--bibliotech-ink);
+  background: var(--bibliotech-canvas);
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.bibliotech-banner {
+  position: relative;
+  min-height: 184px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 15px;
+  padding: 22px clamp(20px, 6vw, 88px) 18px;
+  overflow: hidden;
+  color: #fff;
+  background-color: var(--bibliotech-night);
+  background-image: linear-gradient(90deg, rgba(5, 7, 15, .68) 0%, rgba(5, 7, 15, .44) 42%, rgba(5, 7, 15, .12) 100%), var(--bibliotech-banner-image);
+  background-size: cover;
+  background-position: center 68%;
+  border-bottom: 4px solid var(--bibliotech-cyan);
+  box-shadow: 0 9px 26px rgba(20, 20, 43, .18);
+}
+.bibliotech-banner__content {
+  width: min(1160px, 100%);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.bibliotech-banner__brand { display: flex; align-items: center; gap: 16px; }
+.bibliotech-banner__mark {
+  width: 54px; height: 54px; flex: 0 0 54px;
+  display: grid; place-items: center;
+  border: 1px solid rgba(17, 213, 232, .7); border-radius: 17px;
+  background: rgba(8, 10, 18, .58); color: var(--bibliotech-cyan);
+  box-shadow: 0 0 20px rgba(17, 213, 232, .15), inset 0 1px rgba(255,255,255,.16);
+  font: 700 29px Georgia, serif;
+}
+.bibliotech-banner__brand strong {
+  display: block; color: #fff;
+  font: 700 32px Georgia, "Times New Roman", serif; letter-spacing: -.035em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .55);
+}
+.bibliotech-banner__brand small { display: block; margin-top: 5px; color: rgba(255,255,255,.84); font-size: 14px; }
+.bibliotech-banner__links { display: flex; flex-wrap: wrap; gap: 10px; }
+.bibliotech-banner__links a {
+  padding: 10px 15px; border: 1px solid rgba(255,255,255,.36); border-radius: 999px;
+  color: #fff; background: rgba(8,10,18,.52); font-size: 13px; font-weight: 650;
+  text-decoration: none; backdrop-filter: blur(6px);
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+.bibliotech-banner__links a:hover { color: #fff; background: rgba(17,213,232,.2); border-color: var(--bibliotech-cyan); transform: translateY(-1px); }
+.bibliotech-banner__image-hint {
+  width: min(1160px, 100%); margin: 0 auto; color: rgba(255,255,255,.72);
+  font-size: 10px; letter-spacing: .13em; text-align: right; text-transform: uppercase;
+}
+
+.swagger-ui { color: var(--bibliotech-ink); background: var(--bibliotech-canvas); }
+.swagger-ui .topbar { display: none; }
+.swagger-ui .wrapper { max-width: 1160px; padding-right: 28px; padding-left: 28px; }
+.swagger-ui .information-container, .swagger-ui .scheme-container,
+.swagger-ui .opblock-tag-section, .swagger-ui .models { border-radius: 14px; }
+.swagger-ui .info { margin: 34px auto 22px; }
+.swagger-ui .info .title {
+  color: #211b3b; font-family: Georgia, "Times New Roman", serif;
+  font-size: 36px; font-weight: 700; letter-spacing: -.035em;
+}
+.swagger-ui .info p, .swagger-ui .info li, .swagger-ui .markdown p { color: #5e6075; }
+.swagger-ui .info a { color: var(--bibliotech-violet-deep); }
+.swagger-ui .scheme-container {
+  margin: 18px 0 28px; padding: 18px 22px;
+  background: #fff; border: 1px solid #dcd9ef;
+  box-shadow: 0 7px 22px rgba(52, 41, 103, .07);
+}
+.swagger-ui .opblock-tag-section { margin: 0 0 14px; }
+.swagger-ui .opblock-tag {
+  margin: 0; padding: 17px 18px !important; color: #292344 !important;
+  border-bottom: 1px solid #ddd9f0; border-radius: 12px 12px 0 0;
+  background: linear-gradient(100deg, #e8f8fa, #f0ebff);
+  font-family: Georgia, "Times New Roman", serif; font-size: 19px !important; font-weight: 700 !important;
+}
+.swagger-ui .opblock-tag small { color: #66657b; font-family: Inter, "Segoe UI", Arial, sans-serif; font-size: 13px; }
+.swagger-ui .opblock {
+  margin: 10px 0; overflow: hidden; border-radius: 11px;
+  background: #fff; box-shadow: 0 4px 14px rgba(40, 37, 79, .055);
+}
+.swagger-ui .opblock .opblock-summary { padding: 10px 14px; }
+.swagger-ui .opblock .opblock-summary-description { color: #34364c; font-weight: 550; }
+.swagger-ui .opblock .opblock-section-header { background: #f3f2fa; box-shadow: inset 0 -1px #e2e0ef; }
+.swagger-ui .opblock .opblock-body { background: #fff; }
+.swagger-ui .opblock .opblock-summary-method { min-width: 74px; border-radius: 7px; text-shadow: none; box-shadow: none; }
+.swagger-ui .opblock.opblock-get { border-color: #28bfd2; background: rgba(17,213,232,.075); }
+.swagger-ui .opblock.opblock-post { border-color: #8a62f5; background: rgba(138,98,245,.075); }
+.swagger-ui .opblock.opblock-put { border-color: #6950d5; background: rgba(105,80,213,.075); }
+.swagger-ui .opblock.opblock-delete { border-color: #d66b83; background: rgba(214,107,131,.075); }
+.swagger-ui .btn.execute { border-color: var(--bibliotech-violet-deep); background: var(--bibliotech-violet-deep); }
+.swagger-ui .btn.execute:hover { border-color: #382180; background: #382180; }
+.swagger-ui input, .swagger-ui select, .swagger-ui textarea { border-color: #d2d0e4; border-radius: 6px; }
+.swagger-ui .model-container { border-radius: 9px; background: #f7f6fb; }
+.swagger-ui section.models { margin: 28px 0; padding: 8px 16px; background: #fff; border: 1px solid #dcd9ef; box-shadow: 0 5px 18px rgba(52,41,103,.05); }
+.swagger-ui .models-control { color: #292344; font-family: Georgia, "Times New Roman", serif; }
+.swagger-ui .opblock-control-arrow svg, .swagger-ui .expand-operation svg { fill: var(--bibliotech-violet-deep); }
+.swagger-ui .footer { padding-bottom: 30px; }
+
+@media (max-width: 680px) {
+  .bibliotech-banner { min-height: 210px; padding: 20px 18px; background-position: 62% 68%; }
+  .bibliotech-banner__content { align-items: flex-start; flex-direction: column; gap: 17px; }
+  .bibliotech-banner__brand strong { font-size: 28px; }
+  .bibliotech-banner__links a { padding: 8px 11px; font-size: 12px; }
+  .bibliotech-banner__image-hint { text-align: left; }
+  .swagger-ui .wrapper { padding-right: 14px; padding-left: 14px; }
+  .swagger-ui .info .title { font-size: 29px; }
+}
+
+/* Fallback branding if an IDE serves the CSS before the index transformer. */
+body:not(:has(.bibliotech-banner))::before {
+  content: "BiblioTech  |  Documentação interativa da API\A Leitores • Catálogo de livros • Autores • Categorias";
+  display: block; box-sizing: border-box; min-height: 184px;
+  padding: 38px clamp(24px, 7vw, 100px) 30px; color: #fff; white-space: pre-line;
+  font: 700 29px/1.55 Georgia, "Times New Roman", serif;
+  background-color: var(--bibliotech-night);
+  background-image: linear-gradient(90deg, rgba(5,7,15,.68), rgba(5,7,15,.15)), var(--bibliotech-banner-image);
+  background-size: cover; background-position: center 68%;
+  border-bottom: 4px solid var(--bibliotech-cyan);
+  box-shadow: 0 8px 24px rgba(16, 20, 50, .16);
+}
