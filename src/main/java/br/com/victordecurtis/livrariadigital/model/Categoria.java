@@ -3,6 +3,7 @@ package br.com.victordecurtis.livrariadigital.model;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.util.UUID;
@@ -16,6 +17,7 @@ public class Categoria {
 
     @Column(nullable = false, unique = true)
     @NotBlank(message = "O nome da categoria é obrigatório")
+    @Size(min = 3, max = 60, message = "O nome da categoria deve ter entre 3 e 60 caracteres")
     @Schema(description = "Nome único do gênero ou categoria. Não pode repetir outro cadastro.", example = "Ficção científica")
     private String nome;
 }

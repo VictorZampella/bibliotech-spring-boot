@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 @Table(name = "endereco")
@@ -12,6 +14,8 @@ import lombok.Data;
 public class Endereco {
     @Id
     @Schema(description = "CEP com 8 dígitos, sem hífen. Os demais campos são preenchidos pela consulta ao ViaCEP.", example = "01001000")
+    @NotBlank(message = "O CEP do endereço é obrigatório")
+    @Pattern(regexp = "^[0-9]{8}$", message = "O CEP deve conter exatamente 8 números, sem hífen ou espaços")
     private String cep;
     @Schema(description = "Preenchido automaticamente pelo ViaCEP.", accessMode = Schema.AccessMode.READ_ONLY)
     private String logradouro;
