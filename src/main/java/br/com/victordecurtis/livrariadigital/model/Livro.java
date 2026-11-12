@@ -14,6 +14,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.UUID;
 
@@ -55,12 +56,12 @@ public class Livro {
     @Schema(description = "URL pública da imagem da capa.", example = "https://exemplo.com/capas/duna.jpg")
     private String urlCapa;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 10, scale = 2)
     @NotNull(message = "O preço do livro é obrigatório")
     @DecimalMin(value = "0.00", message = "O preço do livro deve ser maior ou igual a R$ 0,00")
     @Digits(integer = 8, fraction = 2, message = "O preço pode ter até 8 dígitos inteiros e 2 casas decimais")
     @Schema(description = "Preço da obra, em reais. Aceita zero ou valor positivo.", example = "49.90", minimum = "0")
-    private Double preco;
+    private BigDecimal preco;
 
     @ManyToOne
     @NotNull(message = "A categoria do livro é obrigatória")
