@@ -13,27 +13,27 @@ import lombok.Data;
 @Data
 public class Endereco {
     @Id
-    @Schema(description = "CEP com 8 dígitos, sem hífen. Os demais campos são preenchidos pela consulta ao ViaCEP.", example = "01001000")
+    @Schema(description = "Campo que deve ser enviado no cadastro do leitor: CEP com exatamente 8 números, sem hífen ou espaços. A API consulta o ViaCEP para obter os demais dados.", example = "01001000", minLength = 8, maxLength = 8, pattern = "^[0-9]{8}$")
     @NotBlank(message = "O CEP do endereço é obrigatório")
     @Pattern(regexp = "^[0-9]{8}$", message = "O CEP deve conter exatamente 8 números, sem hífen ou espaços")
     private String cep;
-    @Schema(description = "Preenchido automaticamente pelo ViaCEP.", accessMode = Schema.AccessMode.READ_ONLY)
+    @Schema(description = "Nome da rua ou avenida, retornado pelo ViaCEP; pode não estar disponível para todos os CEPs.", accessMode = Schema.AccessMode.READ_ONLY, example = "Praça da Sé")
     private String logradouro;
-    @Schema(description = "Preenchido automaticamente pelo ViaCEP.", accessMode = Schema.AccessMode.READ_ONLY)
+    @Schema(description = "Complemento do endereço, quando informado no ViaCEP. Pode vir vazio.", accessMode = Schema.AccessMode.READ_ONLY, example = "lado ímpar")
     private String complemento;
-    @Schema(description = "Preenchido automaticamente pelo ViaCEP.", accessMode = Schema.AccessMode.READ_ONLY)
+    @Schema(description = "Bairro retornado pelo ViaCEP.", accessMode = Schema.AccessMode.READ_ONLY, example = "Sé")
     private String bairro;
-    @Schema(description = "Preenchido automaticamente pelo ViaCEP.", accessMode = Schema.AccessMode.READ_ONLY)
+    @Schema(description = "Cidade ou município retornado pelo ViaCEP.", accessMode = Schema.AccessMode.READ_ONLY, example = "São Paulo")
     private String localidade;
-    @Schema(description = "Preenchido automaticamente pelo ViaCEP.", accessMode = Schema.AccessMode.READ_ONLY)
+    @Schema(description = "Sigla da unidade federativa retornada pelo ViaCEP.", accessMode = Schema.AccessMode.READ_ONLY, example = "SP", minLength = 2, maxLength = 2)
     private String uf;
-    @Schema(description = "Preenchido automaticamente pelo ViaCEP.", accessMode = Schema.AccessMode.READ_ONLY)
+    @Schema(description = "Código do município no IBGE, retornado pelo ViaCEP.", accessMode = Schema.AccessMode.READ_ONLY, example = "3550308")
     private String ibge;
-    @Schema(description = "Preenchido automaticamente pelo ViaCEP.", accessMode = Schema.AccessMode.READ_ONLY)
+    @Schema(description = "Código GIA retornado pelo ViaCEP, quando disponível.", accessMode = Schema.AccessMode.READ_ONLY, example = "1004")
     private String gia;
-    @Schema(description = "Preenchido automaticamente pelo ViaCEP.", accessMode = Schema.AccessMode.READ_ONLY)
+    @Schema(description = "DDD da localidade retornado pelo ViaCEP.", accessMode = Schema.AccessMode.READ_ONLY, example = "11")
     private String ddd;
-    @Schema(description = "Preenchido automaticamente pelo ViaCEP.", accessMode = Schema.AccessMode.READ_ONLY)
+    @Schema(description = "Código SIAFI do município, retornado pelo ViaCEP quando disponível.", accessMode = Schema.AccessMode.READ_ONLY, example = "7107")
     private String siafi;
 }
 

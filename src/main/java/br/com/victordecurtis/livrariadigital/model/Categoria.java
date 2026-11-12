@@ -12,13 +12,13 @@ import java.util.UUID;
 @Data
 public class Categoria {
     @Id
-    @Schema(description = "Identificador gerado pela API. No PUT, use o UUID informado na rota.", accessMode = Schema.AccessMode.READ_ONLY, example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64")
+    @Schema(description = "UUID criado pela API e devolvido na resposta. Use este identificador ao consultar ou atualizar a categoria.", accessMode = Schema.AccessMode.READ_ONLY, example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64")
     private UUID id;
 
     @Column(nullable = false, unique = true)
     @NotBlank(message = "O nome da categoria é obrigatório")
     @Size(min = 3, max = 60, message = "O nome da categoria deve ter entre 3 e 60 caracteres")
-    @Schema(description = "Nome único do gênero ou categoria. Não pode repetir outro cadastro.", example = "Ficção científica")
+    @Schema(description = "Nome único do gênero ou categoria. Obrigatório; de 3 a 60 caracteres e não pode repetir outro cadastro.", example = "Ficção científica", minLength = 3, maxLength = 60)
     private String nome;
 }
 
