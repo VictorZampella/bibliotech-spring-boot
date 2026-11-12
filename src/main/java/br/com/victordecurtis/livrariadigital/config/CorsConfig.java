@@ -17,7 +17,8 @@ public class CorsConfig {
                         .allowedOrigins("*") // Public API: any site can call it
                         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS") // Allowed HTTP methods
                         .allowedHeaders("*") // Allowed request headers (incl. Authorization)
-                        .exposedHeaders("Location", "Idempotent-Replayed", "Deprecation", "Sunset") // Response headers browsers may read
+                        .exposedHeaders("Location", "Idempotent-Replayed", "Deprecation", "Sunset",
+                                "X-Rate-Limit-Limit", "X-Rate-Limit-Remaining", "Retry-After", "X-API-Key") // Response headers browsers may read
                         .maxAge(3600); // Cache preflight response for 1 hour
             }
         };

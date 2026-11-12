@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.Date;
@@ -45,6 +46,7 @@ public class Usuario {
     @NotBlank(message = "A senha do usuário é obrigatória")
     @Size(min = 8, max = 100, message = "A senha deve ter entre 8 e 100 caracteres")
     @Pattern(regexp = "^\\S+$", message = "A senha não pode conter espaços em branco")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Schema(description = "Senha obrigatória, com 8 a 100 caracteres e sem espaços em branco.", example = "Leitor123", minLength = 8, maxLength = 100)
     private String senha;
 

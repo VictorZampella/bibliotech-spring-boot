@@ -1,12 +1,19 @@
 package br.com.victordecurtis.livrariadigital.controller;
 
 import br.com.victordecurtis.livrariadigital.model.Usuario;
+import br.com.victordecurtis.livrariadigital.handler.ResponseError;
+import br.com.victordecurtis.livrariadigital.service.IdempotencyService;
+import br.com.victordecurtis.livrariadigital.service.IdempotentCreation;
 import br.com.victordecurtis.livrariadigital.service.UpsertResult;
 import br.com.victordecurtis.livrariadigital.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -21,14 +28,17 @@ import java.net.URI;
 import java.util.UUID;
 
 @Tag(name = "Clientes e leitores", description = "Operações para cadastrar, consultar, atualizar e remover leitores da biblioteca.")
+@ApiResponses({@ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde o tempo informado em Retry-After.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ResponseError.class), examples = @ExampleObject(value = "{\"status\":\"error\",\"statusCode\":429,\"error\":\"Too Many Requests\",\"errors\":[\"Limite de 20 requisições por minuto excedido. Aguarde o tempo indicado no cabeçalho Retry-After e tente novamente.\"]}")))})
 @RestController
 @RequestMapping("/api/usuarios")
 public class UsuarioController {
     private final UsuarioService usuarioService;
+    private final IdempotencyService idempotencyService;
 
     @Autowired
-    public UsuarioController(UsuarioService usuarioService) {
+    public UsuarioController(UsuarioService usuarioService, IdempotencyService idempotencyService) {
         this.usuarioService = usuarioService;
+        this.idempotencyService = idempotencyService;
     }
 
     @Operation(summary = "Listar leitores", description = "Retorna uma página dos leitores cadastrados. Use page (página iniciando em 0), size (itens por página) e sort para ordenar; por exemplo, sort=nome,asc.")
@@ -49,11 +59,19 @@ public class UsuarioController {
 
     @Operation(summary = "Cadastrar leitor", description = "Cria um cadastro de leitor. Informe nome, e-mail e telefone exclusivos, senha com pelo menos 8 caracteres sem espaços, data de nascimento e CEP. O endereço é completado pelo ViaCEP; o ID é gerado pela API.")
     @ApiResponses({@ApiResponse(responseCode = "201", description = "Leitor cadastrado com sucesso."),
-            @ApiResponse(responseCode = "400", description = "Os dados enviados não passaram pela validação.")})
+            @ApiResponse(responseCode = "400", description = "Os dados enviados não passaram pela validação."),
+            @ApiResponse(responseCode = "409", description = "A chave já foi usada, mas o registro correspondente foi removido.")})
     @PostMapping
-    public ResponseEntity<Usuario> cadastrarLeitor(@Valid @RequestBody Usuario usuario) {
-        Usuario criado = usuarioService.salvar(usuario);
-        return ResponseEntity.created(URI.create("/api/usuarios/" + criado.getId())).body(criado);
+    public ResponseEntity<Usuario> cadastrarLeitor(
+            @Parameter(description = "Chave única gerada pelo cliente para esta tentativa. Reutilize a mesma chave somente ao repetir a mesma criação.", example = "leitor-2026-001")
+            @RequestHeader("X-Idempotency-Key") String idempotencyKey,
+            @Valid @RequestBody Usuario usuario) {
+        IdempotentCreation<Usuario> resultado = idempotencyService.createOnce(
+                "usuarios", idempotencyKey, () -> usuarioService.salvar(usuario),
+                Usuario::getId, usuarioService::buscarPorId);
+        Usuario criado = resultado.value();
+        return ResponseEntity.created(URI.create("/api/usuarios/" + criado.getId()))
+                .header("Idempotency-Replayed", Boolean.toString(resultado.replayed())).body(criado);
     }
 
     @Operation(summary = "Criar ou atualizar leitor", description = "Use o UUID da rota para identificar o leitor. No corpo, envie todos os campos obrigatórios do cadastro, sem incluir o ID. Se o leitor não existir, cria com esse UUID (201); se já existir, substitui os dados cadastrais (200).")
@@ -70,7 +88,9 @@ public class UsuarioController {
     }
 
     @Operation(summary = "Remover leitor", description = "Exclui o cadastro do leitor identificado pelo UUID. Em sucesso, responde 204 sem corpo; se o leitor não existir, retorna 409.")
+    @SecurityRequirement(name = "ApiKeyAuth")
     @ApiResponses({@ApiResponse(responseCode = "204", description = "Cadastro removido com sucesso."),
+            @ApiResponse(responseCode = "401", description = "Chave X-API-Key ausente ou inválida.", content = @Content(schema = @Schema(implementation = ResponseError.class))),
             @ApiResponse(responseCode = "409", description = "O leitor informado não foi encontrado.")})
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> removerLeitor(@Parameter(description = "UUID do leitor que será removido.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {

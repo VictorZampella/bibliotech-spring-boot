@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.UUID;
 
@@ -17,12 +18,14 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final EnderecoRepository enderecoRepository;
     private final ViaCepService viaCepService;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UsuarioService(UsuarioRepository usuarioRepository, EnderecoRepository enderecoRepository, ViaCepService viaCepService) {
+    public UsuarioService(UsuarioRepository usuarioRepository, EnderecoRepository enderecoRepository, ViaCepService viaCepService, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.enderecoRepository = enderecoRepository;
         this.viaCepService = viaCepService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public Page<Usuario> buscarTodos(Pageable pageable) {
@@ -37,6 +40,7 @@ public class UsuarioService {
         if (usuario.getId() == null) {
             usuario.setId(UUID.randomUUID());
         }
+        codificarSenha(usuario);
         salvarComCep(usuario);
         return usuario;
     }
@@ -65,14 +69,24 @@ public class UsuarioService {
             usuario.setEndereco(dados.getEndereco());
         }
 
+        codificarSenha(usuario);
         salvarComCep(usuario);
         return new UpsertResult<>(usuario, criado);
+    }
+
+    private void codificarSenha(Usuario usuario) {
+        String senha = usuario.getSenha();
+        if (senha != null && !senha.startsWith("$2a$") && !senha.startsWith("$2b$") && !senha.startsWith("$2y$")) {
+            usuario.setSenha(passwordEncoder.encode(senha));
+        }
     }
 
     private void salvarComCep(Usuario usuario) {
         String cep = usuario.getEndereco().getCep();
         Endereco endereco = enderecoRepository.findById(cep).orElseGet(() -> {
             Endereco novoEndereco = viaCepService.consultarCep(cep);
+            // O ViaCEP retorna o CEP formatado com hífen; a API mantém o valor normalizado.
+            novoEndereco.setCep(cep);
             return enderecoRepository.save(novoEndereco);
         });
         usuario.setEndereco(endereco);
