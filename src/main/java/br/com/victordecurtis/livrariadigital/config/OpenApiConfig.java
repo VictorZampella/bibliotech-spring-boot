@@ -30,7 +30,7 @@ import io.swagger.v3.oas.annotations.servers.Server;
                 termsOfService = "/termos-de-uso.html"
         ),
         servers = @Server(
-                description = "Servidor da API no mesmo endereço desta documentação",
+                description = "BiblioTech",
                 url = "/"
         ))
 public class OpenApiConfig {
