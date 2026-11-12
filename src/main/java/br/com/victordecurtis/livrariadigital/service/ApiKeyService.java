@@ -59,10 +59,10 @@ public class ApiKeyService {
         if (rawKey == null || rawKey.isBlank()) {
             throw new UnauthorizedException("Informe uma chave válida no cabeçalho X-API-Key.");
         }
-        ApiKey apiKey = apiKeyRepository.findByKeyHash(sha256(rawKey))
-                .orElseThrow(() -> new UnauthorizedException("Chave de API inválida."));
-        apiKey.revoke();
-        apiKeyRepository.save(apiKey);
+        apiKeyRepository.findByKeyHash(sha256(rawKey)).ifPresent(apiKey -> {
+            apiKey.revoke();
+            apiKeyRepository.save(apiKey);
+        });
     }
 
     private boolean validarSenha(Usuario usuario, String rawPassword) {

@@ -4,12 +4,14 @@ import br.com.victordecurtis.livrariadigital.handler.BusinessException;
 import br.com.victordecurtis.livrariadigital.model.Endereco;
 import br.com.victordecurtis.livrariadigital.model.Usuario;
 import br.com.victordecurtis.livrariadigital.repository.EnderecoRepository;
+import br.com.victordecurtis.livrariadigital.repository.ApiKeyRepository;
 import br.com.victordecurtis.livrariadigital.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -19,13 +21,15 @@ public class UsuarioService {
     private final EnderecoRepository enderecoRepository;
     private final ViaCepService viaCepService;
     private final PasswordEncoder passwordEncoder;
+    private final ApiKeyRepository apiKeyRepository;
 
     @Autowired
-    public UsuarioService(UsuarioRepository usuarioRepository, EnderecoRepository enderecoRepository, ViaCepService viaCepService, PasswordEncoder passwordEncoder) {
+    public UsuarioService(UsuarioRepository usuarioRepository, EnderecoRepository enderecoRepository, ViaCepService viaCepService, PasswordEncoder passwordEncoder, ApiKeyRepository apiKeyRepository) {
         this.usuarioRepository = usuarioRepository;
         this.enderecoRepository = enderecoRepository;
         this.viaCepService = viaCepService;
         this.passwordEncoder = passwordEncoder;
+        this.apiKeyRepository = apiKeyRepository;
     }
 
     public Page<Usuario> buscarTodos(Pageable pageable) {
@@ -45,11 +49,13 @@ public class UsuarioService {
         return usuario;
     }
 
+    @Transactional
     public void excluir(UUID id) {
         Usuario usuario = usuarioRepository.findById(id).orElse(null);
         if (usuario == null) {
             throw new BusinessException("Leitor não encontrado");
         }
+        apiKeyRepository.deleteAllByUsuario_Id(id);
         usuarioRepository.delete(usuario);
     }
 

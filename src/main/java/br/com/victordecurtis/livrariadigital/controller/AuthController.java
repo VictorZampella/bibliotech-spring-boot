@@ -42,10 +42,10 @@ public class AuthController {
         return ResponseEntity.ok().header("X-API-Key", issued.key()).body(body);
     }
 
-    @Operation(summary = "Sair e revogar chave", description = "Revoga a chave enviada em X-API-Key. Depois do logout, essa chave deixa de autorizar operações DELETE.")
+    @Operation(summary = "Sair e revogar chave", description = "Revoga a chave enviada em X-API-Key. Depois do logout, essa chave deixa de autorizar operações DELETE. Se a chave já estiver revogada ou tiver sido removida com o cadastro do leitor, a operação continua respondendo 204.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Chave revogada."),
-            @ApiResponse(responseCode = "401", description = "Chave ausente ou inválida.", content = @Content(schema = @Schema(implementation = ResponseError.class)))
+            @ApiResponse(responseCode = "401", description = "Cabeçalho X-API-Key ausente.", content = @Content(schema = @Schema(implementation = ResponseError.class)))
     })
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(

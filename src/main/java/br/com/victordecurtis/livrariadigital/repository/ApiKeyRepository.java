@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface ApiKeyRepository extends JpaRepository<ApiKey, UUID> {
     Optional<ApiKey> findByKeyHashAndRevokedAtIsNull(String keyHash);
     Optional<ApiKey> findByKeyHash(String keyHash);
+    void deleteAllByUsuario_Id(UUID usuarioId);
 }
