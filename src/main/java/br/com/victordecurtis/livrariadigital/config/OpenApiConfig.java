@@ -15,11 +15,11 @@ import io.swagger.v3.oas.annotations.servers.Server;
                         email = "victorcurtiss@outlook.com",
                         url = "https://meu-portfolio-five-neon.vercel.app/"
                 ),
-                termsOfService = "http://localhost:8080/termos-de-uso.html"
+                termsOfService = "/termos-de-uso.html"
         ),
         servers = @Server(
-                description = "Ambiente local",
-                url = "http://localhost:8080"
+                description = "Servidor da API no mesmo endereço desta documentação",
+                url = "/"
         ))
 public class OpenApiConfig {
 }
