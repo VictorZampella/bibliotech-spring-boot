@@ -33,7 +33,16 @@ import java.util.Map;
 
                         Para testar uma operação, abra-a e clique em **Try it out** (testar). Preencha os campos e clique em **Execute** (executar). A resposta e eventuais mensagens de validação aparecem logo abaixo.
 
-                        Para remover um cadastro, primeiro faça login em **POST `/api/auth/login`** com o e-mail e a senha de um leitor. Copie a chave retornada e clique no cadeado **Authorize** (autorizar) para informar o valor de `X-API-Key`; essa chave é exigida nas operações **DELETE**. Use **POST `/api/auth/logout`** para revogá-la.
+                        ### Como autorizar operações de remoção
+
+                        1. Cadastre um leitor em **POST `/api/usuarios`**, caso ainda não tenha um.
+                        2. Faça login em **POST `/api/auth/login`** com o e-mail e a senha desse leitor. Copie o valor de `apiKey` retornado; ele é exibido somente no login.
+                        3. Clique no botão **Authorize** no topo da página, cole a chave no campo `X-API-Key` e confirme em **Authorize**.
+                        4. Abra a operação **DELETE** desejada e clique em **Try it out**. O Swagger enviará a chave automaticamente; informe o UUID do cadastro e execute.
+
+                        Os cadeados ao lado das operações **DELETE** apenas indicam que elas exigem essa chave: não é necessário preencher uma chave em cada cadeado. Todos usam a chave informada no botão **Authorize** do topo. O Swagger pode exibir **Authorized** assim que o texto é salvo, mas isso não confirma que a chave é válida; a API só verifica a chave quando você executa uma operação protegida. Uma chave inválida resulta em **401 (Não autorizado)** e a remoção não acontece.
+
+                        Para encerrar o acesso, execute **POST `/api/auth/logout`** com a chave atual. Depois do logout, faça login novamente para obter outra chave.
 
                         Cada endereço IP pode fazer até **20 requisições por minuto**. Ao ultrapassar esse limite, a API responde com o código **429 (Muitas requisições)**. Aguarde o tempo informado no cabeçalho `Retry-After` antes de tentar novamente.
                         """,
@@ -49,7 +58,7 @@ import java.util.Map;
                 url = "/"
         ))
 @SecurityScheme(name = "ApiKeyAuth", type = SecuritySchemeType.APIKEY,
-        in = SecuritySchemeIn.HEADER, paramName = "X-API-Key", description = "Chave emitida por POST /api/auth/login; necessária nas operações DELETE.")
+        in = SecuritySchemeIn.HEADER, paramName = "X-API-Key", description = "Cole aqui a apiKey retornada por POST /api/auth/login. O botão Authorize do topo salva a chave para todas as operações DELETE; os cadeados indicam quais rotas a exigem. A indicação Authorized do Swagger significa apenas que o texto foi salvo: a API valida a chave ao executar a operação protegida.")
 public class OpenApiConfig {
 
     /**
