@@ -13,13 +13,13 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**") // Applies CORS to all endpoints
-                        .allowedOrigins("*") // Public API: any site can call it
-                        .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS") // Allowed HTTP methods
-                        .allowedHeaders("*") // Allowed request headers (incl. Authorization)
+                registry.addMapping("/**")
+                        .allowedOrigins("*")
+                        .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                        .allowedHeaders("*")
                         .exposedHeaders("Location", "Idempotent-Replayed", "Deprecation", "Sunset",
-                                "X-Rate-Limit-Limit", "X-Rate-Limit-Remaining", "Retry-After", "X-API-Key") // Response headers browsers may read
-                        .maxAge(3600); // Cache preflight response for 1 hour
+                                "X-Rate-Limit-Limit", "X-Rate-Limit-Remaining", "Retry-After", "X-API-Key")
+                        .maxAge(3600);
             }
         };
     }

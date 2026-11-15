@@ -17,7 +17,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -32,20 +31,19 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/usuarios")
 public class UsuarioController {
-    private final UsuarioService usuarioService;
-    private final IdempotencyService idempotencyService;
+    private final UsuarioService servicoLeitores;
+    private final IdempotencyService servicoIdempotencia;
 
-    @Autowired
-    public UsuarioController(UsuarioService usuarioService, IdempotencyService idempotencyService) {
-        this.usuarioService = usuarioService;
-        this.idempotencyService = idempotencyService;
+    public UsuarioController(UsuarioService servicoLeitores, IdempotencyService servicoIdempotencia) {
+        this.servicoLeitores = servicoLeitores;
+        this.servicoIdempotencia = servicoIdempotencia;
     }
 
     @Operation(summary = "Listar leitores", description = "Retorna uma página dos leitores cadastrados. Use page (página iniciando em 0), size (itens por página) e sort para ordenar; por exemplo, sort=nome,asc.")
     @GetMapping
     public ResponseEntity<Page<Usuario>> listarLeitores(
-            @ParameterObject @PageableDefault(size = 10, sort = "nome") Pageable pageable) {
-        return ResponseEntity.ok(usuarioService.buscarTodos(pageable));
+            @ParameterObject @PageableDefault(size = 10, sort = "nome") Pageable paginacao) {
+        return ResponseEntity.ok(servicoLeitores.buscarTodos(paginacao));
     }
 
     @Operation(summary = "Consultar leitor por UUID", description = "Busca o cadastro do leitor pelo identificador informado. Retorna 404 quando não houver leitor com esse UUID.")
@@ -53,7 +51,7 @@ public class UsuarioController {
             @ApiResponse(responseCode = "404", description = "Não existe leitor com esse UUID.")})
     @GetMapping("/{id}")
     public ResponseEntity<Usuario> consultarLeitor(@Parameter(description = "UUID do leitor que será consultado.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
-        Usuario usuario = usuarioService.buscarPorId(id);
+        Usuario usuario = servicoLeitores.buscarPorId(id);
         return usuario == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(usuario);
     }
 
@@ -64,14 +62,14 @@ public class UsuarioController {
     @PostMapping
     public ResponseEntity<Usuario> cadastrarLeitor(
             @Parameter(description = "Chave única gerada pelo cliente para esta tentativa. Reutilize a mesma chave somente ao repetir a mesma criação.", example = "leitor-2026-001")
-            @RequestHeader("X-Idempotency-Key") String idempotencyKey,
+            @RequestHeader("X-Idempotency-Key") String chaveIdempotencia,
             @Valid @RequestBody Usuario usuario) {
-        IdempotentCreation<Usuario> resultado = idempotencyService.createOnce(
-                "usuarios", idempotencyKey, () -> usuarioService.salvar(usuario),
-                Usuario::getId, usuarioService::buscarPorId);
-        Usuario criado = resultado.value();
+        IdempotentCreation<Usuario> resultado = servicoIdempotencia.criarUmaVez(
+                "usuarios", chaveIdempotencia, () -> servicoLeitores.salvar(usuario),
+                Usuario::getId, servicoLeitores::buscarPorId);
+        Usuario criado = resultado.registro();
         return ResponseEntity.created(URI.create("/api/usuarios/" + criado.getId()))
-                .header("Idempotency-Replayed", Boolean.toString(resultado.replayed())).body(criado);
+                .header("Idempotency-Replayed", Boolean.toString(resultado.repetida())).body(criado);
     }
 
     @Operation(summary = "Criar ou atualizar leitor", description = "Use o UUID da rota para identificar o leitor. No corpo, envie todos os campos obrigatórios do cadastro, sem incluir o ID. Se o leitor não existir, cria com esse UUID (201); se já existir, substitui os dados cadastrais (200).")
@@ -80,11 +78,11 @@ public class UsuarioController {
             @ApiResponse(responseCode = "400", description = "Os dados enviados não passaram pela validação.")})
     @PutMapping("/{id}")
     public ResponseEntity<Usuario> criarOuAtualizarLeitor(@Parameter(description = "UUID que identifica o leitor. Se ainda não existir, será usado para criá-lo.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id, @Valid @RequestBody Usuario usuario) {
-        UpsertResult<Usuario> resultado = usuarioService.atualizarOuCriar(id, usuario);
-        if (resultado.created()) {
-            return ResponseEntity.created(URI.create("/api/usuarios/" + id)).body(resultado.value());
+        UpsertResult<Usuario> resultado = servicoLeitores.atualizarOuCriar(id, usuario);
+        if (resultado.criado()) {
+            return ResponseEntity.created(URI.create("/api/usuarios/" + id)).body(resultado.registro());
         }
-        return ResponseEntity.ok(resultado.value());
+        return ResponseEntity.ok(resultado.registro());
     }
 
     @Operation(summary = "Remover leitor", description = "Exclui o cadastro do leitor identificado pelo UUID. Em sucesso, responde 204 sem corpo; se o leitor não existir, retorna 409.")
@@ -94,7 +92,7 @@ public class UsuarioController {
             @ApiResponse(responseCode = "409", description = "O leitor informado não foi encontrado.")})
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> removerLeitor(@Parameter(description = "UUID do leitor que será removido.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
-        usuarioService.excluir(id);
+        servicoLeitores.excluir(id);
         return ResponseEntity.noContent().build();
     }
 }

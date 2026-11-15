@@ -2,7 +2,6 @@ package br.com.victordecurtis.livrariadigital.service;
 
 import br.com.victordecurtis.livrariadigital.model.Categoria;
 import br.com.victordecurtis.livrariadigital.repository.CategoriaRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -11,34 +10,33 @@ import java.util.UUID;
 
 @Service
 public class CategoriaService {
-    private final CategoriaRepository categoriaRepository;
+    private final CategoriaRepository repositorioCategorias;
 
-    @Autowired
-    public CategoriaService(CategoriaRepository categoriaRepository) {
-        this.categoriaRepository = categoriaRepository;
+    public CategoriaService(CategoriaRepository repositorioCategorias) {
+        this.repositorioCategorias = repositorioCategorias;
     }
 
-    public Page<Categoria> buscarTodos(Pageable pageable) {
-        return categoriaRepository.findAll(pageable);
+    public Page<Categoria> buscarTodos(Pageable paginacao) {
+        return repositorioCategorias.findAll(paginacao);
     }
 
     public Categoria buscarPorId(UUID id) {
-        return categoriaRepository.findById(id).orElse(null);
+        return repositorioCategorias.findById(id).orElse(null);
     }
 
     public Categoria salvar(Categoria categoria) {
         if (categoria.getId() == null) {
             categoria.setId(UUID.randomUUID());
         }
-        return categoriaRepository.save(categoria);
+        return repositorioCategorias.save(categoria);
     }
 
     public void excluir(UUID id) {
-        categoriaRepository.deleteById(id);
+        repositorioCategorias.deleteById(id);
     }
 
     public UpsertResult<Categoria> atualizarOuCriar(UUID id, Categoria dados) {
-        Categoria categoria = categoriaRepository.findById(id).orElse(null);
+        Categoria categoria = repositorioCategorias.findById(id).orElse(null);
         boolean criado = categoria == null;
 
         if (criado) {
@@ -48,7 +46,7 @@ public class CategoriaService {
             categoria.setNome(dados.getNome());
         }
 
-        return new UpsertResult<>(categoriaRepository.save(categoria), criado);
+        return new UpsertResult<>(repositorioCategorias.save(categoria), criado);
     }
 }
 

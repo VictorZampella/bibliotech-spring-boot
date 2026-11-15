@@ -7,7 +7,7 @@ import jakarta.persistence.Table;
 
 import java.util.UUID;
 
-/** Guarda a chave de uma criação já processada para evitar duplicidade em retries. */
+/** Guarda a chave de uma criação já processada para evitar duplicidade em novas tentativas. */
 @Entity
 @Table(name = "api_idempotency")
 public class IdempotencyRecord {

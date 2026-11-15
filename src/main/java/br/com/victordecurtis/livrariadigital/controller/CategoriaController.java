@@ -17,7 +17,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -32,20 +31,19 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/categorias")
 public class CategoriaController {
-    private final CategoriaService categoriaService;
-    private final IdempotencyService idempotencyService;
+    private final CategoriaService servicoCategorias;
+    private final IdempotencyService servicoIdempotencia;
 
-    @Autowired
-    public CategoriaController(CategoriaService categoriaService, IdempotencyService idempotencyService) {
-        this.categoriaService = categoriaService;
-        this.idempotencyService = idempotencyService;
+    public CategoriaController(CategoriaService servicoCategorias, IdempotencyService servicoIdempotencia) {
+        this.servicoCategorias = servicoCategorias;
+        this.servicoIdempotencia = servicoIdempotencia;
     }
 
     @Operation(summary = "Listar categorias", description = "Retorna uma página das categorias cadastradas. Use page (página iniciando em 0), size (itens por página) e sort para ordenar; por exemplo, sort=nome,asc.")
     @GetMapping
     public ResponseEntity<Page<Categoria>> listarCategorias(
-            @ParameterObject @PageableDefault(size = 10, sort = "nome") Pageable pageable) {
-        return ResponseEntity.ok(categoriaService.buscarTodos(pageable));
+            @ParameterObject @PageableDefault(size = 10, sort = "nome") Pageable paginacao) {
+        return ResponseEntity.ok(servicoCategorias.buscarTodos(paginacao));
     }
 
     @Operation(summary = "Consultar categoria por UUID", description = "Busca a categoria pelo identificador informado. Retorna 404 quando não houver cadastro com esse UUID.")
@@ -53,7 +51,7 @@ public class CategoriaController {
             @ApiResponse(responseCode = "404", description = "Não existe categoria com esse UUID.")})
     @GetMapping("/{id}")
     public ResponseEntity<Categoria> consultarCategoria(@Parameter(description = "UUID da categoria que será consultada.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
-        Categoria categoria = categoriaService.buscarPorId(id);
+        Categoria categoria = servicoCategorias.buscarPorId(id);
         return categoria == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(categoria);
     }
 
@@ -64,14 +62,14 @@ public class CategoriaController {
     @PostMapping
     public ResponseEntity<Categoria> cadastrarCategoria(
             @Parameter(description = "Chave única gerada pelo cliente para esta tentativa. Reutilize a mesma chave somente ao repetir a mesma criação.", example = "categoria-2026-001")
-            @RequestHeader("X-Idempotency-Key") String idempotencyKey,
+            @RequestHeader("X-Idempotency-Key") String chaveIdempotencia,
             @Valid @RequestBody Categoria categoria) {
-        IdempotentCreation<Categoria> resultado = idempotencyService.createOnce(
-                "categorias", idempotencyKey, () -> categoriaService.salvar(categoria),
-                Categoria::getId, categoriaService::buscarPorId);
-        Categoria criada = resultado.value();
+        IdempotentCreation<Categoria> resultado = servicoIdempotencia.criarUmaVez(
+                "categorias", chaveIdempotencia, () -> servicoCategorias.salvar(categoria),
+                Categoria::getId, servicoCategorias::buscarPorId);
+        Categoria criada = resultado.registro();
         return ResponseEntity.created(URI.create("/api/categorias/" + criada.getId()))
-                .header("Idempotency-Replayed", Boolean.toString(resultado.replayed())).body(criada);
+                .header("Idempotency-Replayed", Boolean.toString(resultado.repetida())).body(criada);
     }
 
     @Operation(summary = "Criar ou atualizar categoria", description = "Use o UUID da rota para identificar a categoria e informe o nome no corpo, sem incluir o ID. Se a categoria não existir, cria com esse UUID (201); se já existir, atualiza o nome (200).")
@@ -80,11 +78,11 @@ public class CategoriaController {
             @ApiResponse(responseCode = "400", description = "Os dados enviados não passaram pela validação.")})
     @PutMapping("/{id}")
     public ResponseEntity<Categoria> criarOuAtualizarCategoria(@Parameter(description = "UUID que identifica a categoria. Se ainda não existir, será usado para criá-la.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id, @Valid @RequestBody Categoria categoria) {
-        UpsertResult<Categoria> resultado = categoriaService.atualizarOuCriar(id, categoria);
-        if (resultado.created()) {
-            return ResponseEntity.created(URI.create("/api/categorias/" + id)).body(resultado.value());
+        UpsertResult<Categoria> resultado = servicoCategorias.atualizarOuCriar(id, categoria);
+        if (resultado.criado()) {
+            return ResponseEntity.created(URI.create("/api/categorias/" + id)).body(resultado.registro());
         }
-        return ResponseEntity.ok(resultado.value());
+        return ResponseEntity.ok(resultado.registro());
     }
 
     @Operation(summary = "Remover categoria", description = "Exclui do catálogo a categoria identificada pelo UUID. Em sucesso, responde 204 sem corpo.")
@@ -93,7 +91,7 @@ public class CategoriaController {
             @ApiResponse(responseCode = "401", description = "Chave X-API-Key ausente ou inválida.", content = @Content(schema = @Schema(implementation = ResponseError.class)))})
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> removerCategoria(@Parameter(description = "UUID da categoria que será removida.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
-        categoriaService.excluir(id);
+        servicoCategorias.excluir(id);
         return ResponseEntity.noContent().build();
     }
 }

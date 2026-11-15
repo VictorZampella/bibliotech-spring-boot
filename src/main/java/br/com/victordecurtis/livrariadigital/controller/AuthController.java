@@ -23,10 +23,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-    private final ApiKeyService apiKeyService;
+    private final ApiKeyService servicoChaves;
 
-    public AuthController(ApiKeyService apiKeyService) {
-        this.apiKeyService = apiKeyService;
+    public AuthController(ApiKeyService servicoChaves) {
+        this.servicoChaves = servicoChaves;
     }
 
     @Operation(summary = "Entrar e gerar chave de API", description = "Valida o e-mail e a senha do leitor e emite uma chave X-API-Key. A chave é mostrada somente nesta resposta: copie-a e use-a no botão Authorize do Swagger ou no cabeçalho das requisições DELETE.")
@@ -36,10 +36,10 @@ public class AuthController {
     })
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        ApiKeyService.IssuedApiKey issued = apiKeyService.login(request.email(), request.senha());
-        LoginResponse body = new LoginResponse(issued.key(), issued.userId(), issued.name(),
+        ApiKeyService.ChaveEmitida chaveEmitida = servicoChaves.autenticar(request.email(), request.senha());
+        LoginResponse body = new LoginResponse(chaveEmitida.valor(), chaveEmitida.usuarioId(), chaveEmitida.nome(),
                 "Guarde esta chave. Ela não será exibida novamente; use-a no cabeçalho X-API-Key.");
-        return ResponseEntity.ok().header("X-API-Key", issued.key()).body(body);
+        return ResponseEntity.ok().header("X-API-Key", chaveEmitida.valor()).body(body);
     }
 
     @Operation(summary = "Sair e revogar chave", description = "Revoga a chave enviada em X-API-Key. Depois do logout, essa chave deixa de autorizar operações DELETE. Se a chave já estiver revogada ou tiver sido removida com o cadastro do leitor, a operação continua respondendo 204.")
@@ -50,8 +50,8 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
             @Parameter(description = "Chave emitida pelo endpoint de login.", example = "biblio_chave-emitida-no-login")
-            @RequestHeader("X-API-Key") String apiKey) {
-        apiKeyService.logout(apiKey);
+            @RequestHeader("X-API-Key") String chave) {
+        servicoChaves.revogar(chave);
         return ResponseEntity.noContent().build();
     }
 

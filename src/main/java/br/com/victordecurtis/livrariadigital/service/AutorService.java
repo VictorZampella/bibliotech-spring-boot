@@ -2,7 +2,6 @@ package br.com.victordecurtis.livrariadigital.service;
 
 import br.com.victordecurtis.livrariadigital.model.Autor;
 import br.com.victordecurtis.livrariadigital.repository.AutorRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -11,34 +10,33 @@ import java.util.UUID;
 
 @Service
 public class AutorService {
-    private final AutorRepository autorRepository;
+    private final AutorRepository repositorioAutores;
 
-    @Autowired
-    public AutorService(AutorRepository autorRepository) {
-        this.autorRepository = autorRepository;
+    public AutorService(AutorRepository repositorioAutores) {
+        this.repositorioAutores = repositorioAutores;
     }
 
-    public Page<Autor> buscarTodos(Pageable pageable) {
-        return autorRepository.findAll(pageable);
+    public Page<Autor> buscarTodos(Pageable paginacao) {
+        return repositorioAutores.findAll(paginacao);
     }
 
     public Autor buscarPorId(UUID id) {
-        return autorRepository.findById(id).orElse(null);
+        return repositorioAutores.findById(id).orElse(null);
     }
 
     public Autor salvar(Autor autor) {
         if (autor.getId() == null) {
             autor.setId(UUID.randomUUID());
         }
-        return autorRepository.save(autor);
+        return repositorioAutores.save(autor);
     }
 
     public void excluir(UUID id) {
-        autorRepository.deleteById(id);
+        repositorioAutores.deleteById(id);
     }
 
     public UpsertResult<Autor> atualizarOuCriar(UUID id, Autor dados) {
-        Autor autor = autorRepository.findById(id).orElse(null);
+        Autor autor = repositorioAutores.findById(id).orElse(null);
         boolean criado = autor == null;
 
         if (criado) {
@@ -52,7 +50,7 @@ public class AutorService {
             autor.setNacionalidade(dados.getNacionalidade());
         }
 
-        return new UpsertResult<>(autorRepository.save(autor), criado);
+        return new UpsertResult<>(repositorioAutores.save(autor), criado);
     }
 }
 

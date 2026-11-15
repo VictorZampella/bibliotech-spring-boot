@@ -61,10 +61,6 @@ import java.util.Map;
         in = SecuritySchemeIn.HEADER, paramName = "X-API-Key", description = "Cole aqui a apiKey retornada por POST /api/auth/login. O botão Authorize do topo salva a chave para todas as operações DELETE; os cadeados indicam quais rotas a exigem. A indicação Authorized do Swagger significa apenas que o texto foi salvo: a API valida a chave ao executar a operação protegida.")
 public class OpenApiConfig {
 
-    /**
-     * Substitui as descrições automáticas em inglês do Pageable e das respostas
-     * padrão por orientações em português, mais fáceis de entender no Swagger.
-     */
     @Bean
     public OperationCustomizer descricoesSwaggerEmPortugues() {
         return (operation, handlerMethod) -> {

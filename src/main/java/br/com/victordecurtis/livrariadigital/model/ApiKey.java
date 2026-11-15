@@ -49,7 +49,7 @@ public class ApiKey {
         return revokedAt;
     }
 
-    public void revoke() {
+    public void revogar() {
         if (revokedAt == null) {
             revokedAt = Instant.now();
         }

@@ -21,81 +21,81 @@ import java.util.UUID;
 public class ApiKeyService {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-    private final UsuarioRepository usuarioRepository;
-    private final ApiKeyRepository apiKeyRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final UsuarioRepository repositorioLeitores;
+    private final ApiKeyRepository repositorioChaves;
+    private final PasswordEncoder codificadorSenha;
 
-    public ApiKeyService(UsuarioRepository usuarioRepository,
-                         ApiKeyRepository apiKeyRepository,
-                         PasswordEncoder passwordEncoder) {
-        this.usuarioRepository = usuarioRepository;
-        this.apiKeyRepository = apiKeyRepository;
-        this.passwordEncoder = passwordEncoder;
+    public ApiKeyService(UsuarioRepository repositorioLeitores,
+                         ApiKeyRepository repositorioChaves,
+                         PasswordEncoder codificadorSenha) {
+        this.repositorioLeitores = repositorioLeitores;
+        this.repositorioChaves = repositorioChaves;
+        this.codificadorSenha = codificadorSenha;
     }
 
     @Transactional
-    public IssuedApiKey login(String email, String password) {
-        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email.trim())
+    public ChaveEmitida autenticar(String email, String senha) {
+        Usuario usuario = repositorioLeitores.findByEmailIgnoreCase(email.trim())
                 .orElseThrow(() -> new UnauthorizedException("E-mail ou senha inválidos."));
-        if (!validarSenha(usuario, password)) {
+        if (!validarSenha(usuario, senha)) {
             throw new UnauthorizedException("E-mail ou senha inválidos.");
         }
 
-        byte[] randomBytes = new byte[32];
-        SECURE_RANDOM.nextBytes(randomBytes);
-        String rawKey = "biblio_" + Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
-        apiKeyRepository.save(new ApiKey(sha256(rawKey), usuario));
-        return new IssuedApiKey(rawKey, usuario.getId(), usuario.getNome());
+        byte[] bytesAleatorios = new byte[32];
+        SECURE_RANDOM.nextBytes(bytesAleatorios);
+        String chave = "biblio_" + Base64.getUrlEncoder().withoutPadding().encodeToString(bytesAleatorios);
+        repositorioChaves.save(new ApiKey(hashSha256(chave), usuario));
+        return new ChaveEmitida(chave, usuario.getId(), usuario.getNome());
     }
 
     @Transactional(readOnly = true)
-    public boolean isValid(String rawKey) {
-        return rawKey != null && !rawKey.isBlank()
-                && apiKeyRepository.findByKeyHashAndRevokedAtIsNull(sha256(rawKey)).isPresent();
+    public boolean chaveValida(String chave) {
+        return chave != null && !chave.isBlank()
+                && repositorioChaves.findByKeyHashAndRevokedAtIsNull(hashSha256(chave)).isPresent();
     }
 
     @Transactional
-    public void logout(String rawKey) {
-        if (rawKey == null || rawKey.isBlank()) {
+    public void revogar(String chave) {
+        if (chave == null || chave.isBlank()) {
             throw new UnauthorizedException("Informe uma chave válida no cabeçalho X-API-Key.");
         }
-        apiKeyRepository.findByKeyHash(sha256(rawKey)).ifPresent(apiKey -> {
-            apiKey.revoke();
-            apiKeyRepository.save(apiKey);
+        repositorioChaves.findByKeyHash(hashSha256(chave)).ifPresent(chaveSalva -> {
+            chaveSalva.revogar();
+            repositorioChaves.save(chaveSalva);
         });
     }
 
-    private boolean validarSenha(Usuario usuario, String rawPassword) {
-        String storedPassword = usuario.getSenha();
-        if (storedPassword == null || rawPassword == null) {
+    private boolean validarSenha(Usuario usuario, String senhaRecebida) {
+        String senhaArmazenada = usuario.getSenha();
+        if (senhaArmazenada == null || senhaRecebida == null) {
             return false;
         }
-        if (isBcryptHash(storedPassword)) {
-            return passwordEncoder.matches(rawPassword, storedPassword);
+        if (ehHashBCrypt(senhaArmazenada)) {
+            return codificadorSenha.matches(senhaRecebida, senhaArmazenada);
         }
 
-        boolean legacyPasswordMatches = MessageDigest.isEqual(
-                rawPassword.getBytes(StandardCharsets.UTF_8), storedPassword.getBytes(StandardCharsets.UTF_8));
-        if (legacyPasswordMatches) {
-            usuario.setSenha(passwordEncoder.encode(rawPassword));
-            usuarioRepository.save(usuario);
+        boolean senhaLegadaValida = MessageDigest.isEqual(
+                senhaRecebida.getBytes(StandardCharsets.UTF_8), senhaArmazenada.getBytes(StandardCharsets.UTF_8));
+        if (senhaLegadaValida) {
+            usuario.setSenha(codificadorSenha.encode(senhaRecebida));
+            repositorioLeitores.save(usuario);
         }
-        return legacyPasswordMatches;
+        return senhaLegadaValida;
     }
 
-    private boolean isBcryptHash(String value) {
-        return value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
+    private boolean ehHashBCrypt(String valor) {
+        return valor.startsWith("$2a$") || valor.startsWith("$2b$") || valor.startsWith("$2y$");
     }
 
-    private String sha256(String value) {
+    private String hashSha256(String valor) {
         try {
-            byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest);
+            byte[] resumo = MessageDigest.getInstance("SHA-256").digest(valor.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(resumo);
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 não está disponível nesta JVM.", exception);
         }
     }
 
-    public record IssuedApiKey(String key, UUID userId, String name) {
+    public record ChaveEmitida(String valor, UUID usuarioId, String nome) {
     }
 }

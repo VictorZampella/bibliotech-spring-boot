@@ -20,8 +20,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class BiblioTechSwaggerIndexPageTransformer extends SwaggerIndexPageTransformer {
-    private static final Pattern BODY_TAG = Pattern.compile("(?i)<body[^>]*>");
-    private static final String BRAND_BANNER = """
+    private static final Pattern PADRAO_TAG_CORPO = Pattern.compile("(?i)<body[^>]*>");
+    private static final String BANNER_BIBLIOTECH = """
             <header class="bibliotech-banner" aria-label="BiblioTech">
               <div class="bibliotech-banner__content">
                 <div class="bibliotech-banner__brand"><span class="bibliotech-banner__mark">B</span><span><strong>BiblioTech</strong><small>Documentação interativa da API</small></span></div>
@@ -44,26 +44,26 @@ public class BiblioTechSwaggerIndexPageTransformer extends SwaggerIndexPageTrans
     }
 
     @Override
-    public Resource transform(HttpServletRequest request, Resource resource, ResourceTransformerChain transformer)
+    public Resource transform(HttpServletRequest requisicao, Resource recurso, ResourceTransformerChain cadeiaTransformacao)
             throws IOException {
-        Resource transformed = super.transform(request, resource, transformer);
-        if (resource.getFilename() == null || !resource.getFilename().equalsIgnoreCase("index.html")) {
-            return transformed;
+        Resource recursoTransformado = super.transform(requisicao, recurso, cadeiaTransformacao);
+        if (recurso.getFilename() == null || !recurso.getFilename().equalsIgnoreCase("index.html")) {
+            return recursoTransformado;
         }
 
-        String html;
-        try (InputStream input = transformed.getInputStream()) {
-            html = StreamUtils.copyToString(input, StandardCharsets.UTF_8);
+        String pagina;
+        try (InputStream entrada = recursoTransformado.getInputStream()) {
+            pagina = StreamUtils.copyToString(entrada, StandardCharsets.UTF_8);
         }
-        html = html.replace("<title>Swagger UI</title>", "<title>BiblioTech | API</title>");
-        html = html.replace("</head>", "<link rel=\"stylesheet\" href=\"/css/bibliotech-swagger.css?v=4\"></head>");
+        pagina = pagina.replace("<title>Swagger UI</title>", "<title>BiblioTech | API</title>");
+        pagina = pagina.replace("</head>", "<link rel=\"stylesheet\" href=\"/css/bibliotech-swagger.css?v=4\"></head>");
 
-        Matcher bodyTag = BODY_TAG.matcher(html);
-        if (bodyTag.find()) {
-            html = html.substring(0, bodyTag.end()) + BRAND_BANNER + html.substring(bodyTag.end());
+        Matcher tagCorpo = PADRAO_TAG_CORPO.matcher(pagina);
+        if (tagCorpo.find()) {
+            pagina = pagina.substring(0, tagCorpo.end()) + BANNER_BIBLIOTECH + pagina.substring(tagCorpo.end());
         }
 
-        return new TransformedResource(transformed, html.getBytes(StandardCharsets.UTF_8));
+        return new TransformedResource(recursoTransformado, pagina.getBytes(StandardCharsets.UTF_8));
     }
 }
 

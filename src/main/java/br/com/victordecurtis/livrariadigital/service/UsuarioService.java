@@ -6,7 +6,6 @@ import br.com.victordecurtis.livrariadigital.model.Usuario;
 import br.com.victordecurtis.livrariadigital.repository.EnderecoRepository;
 import br.com.victordecurtis.livrariadigital.repository.ApiKeyRepository;
 import br.com.victordecurtis.livrariadigital.repository.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -17,27 +16,30 @@ import java.util.UUID;
 
 @Service
 public class UsuarioService {
-    private final UsuarioRepository usuarioRepository;
-    private final EnderecoRepository enderecoRepository;
-    private final ViaCepService viaCepService;
-    private final PasswordEncoder passwordEncoder;
-    private final ApiKeyRepository apiKeyRepository;
+    private final UsuarioRepository repositorioLeitores;
+    private final EnderecoRepository repositorioEnderecos;
+    private final ViaCepService servicoViaCep;
+    private final PasswordEncoder codificadorSenha;
+    private final ApiKeyRepository repositorioChaves;
 
-    @Autowired
-    public UsuarioService(UsuarioRepository usuarioRepository, EnderecoRepository enderecoRepository, ViaCepService viaCepService, PasswordEncoder passwordEncoder, ApiKeyRepository apiKeyRepository) {
-        this.usuarioRepository = usuarioRepository;
-        this.enderecoRepository = enderecoRepository;
-        this.viaCepService = viaCepService;
-        this.passwordEncoder = passwordEncoder;
-        this.apiKeyRepository = apiKeyRepository;
+    public UsuarioService(UsuarioRepository repositorioLeitores,
+                          EnderecoRepository repositorioEnderecos,
+                          ViaCepService servicoViaCep,
+                          PasswordEncoder codificadorSenha,
+                          ApiKeyRepository repositorioChaves) {
+        this.repositorioLeitores = repositorioLeitores;
+        this.repositorioEnderecos = repositorioEnderecos;
+        this.servicoViaCep = servicoViaCep;
+        this.codificadorSenha = codificadorSenha;
+        this.repositorioChaves = repositorioChaves;
     }
 
-    public Page<Usuario> buscarTodos(Pageable pageable) {
-        return usuarioRepository.findAll(pageable);
+    public Page<Usuario> buscarTodos(Pageable paginacao) {
+        return repositorioLeitores.findAll(paginacao);
     }
 
     public Usuario buscarPorId(UUID id) {
-        return usuarioRepository.findById(id).orElse(null);
+        return repositorioLeitores.findById(id).orElse(null);
     }
 
     public Usuario salvar(Usuario usuario) {
@@ -51,16 +53,16 @@ public class UsuarioService {
 
     @Transactional
     public void excluir(UUID id) {
-        Usuario usuario = usuarioRepository.findById(id).orElse(null);
+        Usuario usuario = repositorioLeitores.findById(id).orElse(null);
         if (usuario == null) {
             throw new BusinessException("Leitor não encontrado");
         }
-        apiKeyRepository.deleteAllByUsuario_Id(id);
-        usuarioRepository.delete(usuario);
+        repositorioChaves.deleteAllByUsuario_Id(id);
+        repositorioLeitores.delete(usuario);
     }
 
     public UpsertResult<Usuario> atualizarOuCriar(UUID id, Usuario dados) {
-        Usuario usuario = usuarioRepository.findById(id).orElse(null);
+        Usuario usuario = repositorioLeitores.findById(id).orElse(null);
         boolean criado = usuario == null;
 
         if (criado) {
@@ -83,20 +85,20 @@ public class UsuarioService {
     private void codificarSenha(Usuario usuario) {
         String senha = usuario.getSenha();
         if (senha != null && !senha.startsWith("$2a$") && !senha.startsWith("$2b$") && !senha.startsWith("$2y$")) {
-            usuario.setSenha(passwordEncoder.encode(senha));
+            usuario.setSenha(codificadorSenha.encode(senha));
         }
     }
 
     private void salvarComCep(Usuario usuario) {
         String cep = usuario.getEndereco().getCep();
-        Endereco endereco = enderecoRepository.findById(cep).orElseGet(() -> {
-            Endereco novoEndereco = viaCepService.consultarCep(cep);
+        Endereco endereco = repositorioEnderecos.findById(cep).orElseGet(() -> {
+            Endereco novoEndereco = servicoViaCep.consultarCep(cep);
             // O ViaCEP retorna o CEP formatado com hífen; a API mantém o valor normalizado.
             novoEndereco.setCep(cep);
-            return enderecoRepository.save(novoEndereco);
+            return repositorioEnderecos.save(novoEndereco);
         });
         usuario.setEndereco(endereco);
-        usuarioRepository.save(usuario);
+        repositorioLeitores.save(usuario);
     }
 }
 

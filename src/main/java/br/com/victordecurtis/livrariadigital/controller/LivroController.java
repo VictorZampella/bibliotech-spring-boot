@@ -17,7 +17,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -33,20 +32,19 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/livros")
 public class LivroController {
-    private final LivroService livroService;
-    private final IdempotencyService idempotencyService;
+    private final LivroService servicoLivros;
+    private final IdempotencyService servicoIdempotencia;
 
-    @Autowired
-    public LivroController(LivroService livroService, IdempotencyService idempotencyService) {
-        this.livroService = livroService;
-        this.idempotencyService = idempotencyService;
+    public LivroController(LivroService servicoLivros, IdempotencyService servicoIdempotencia) {
+        this.servicoLivros = servicoLivros;
+        this.servicoIdempotencia = servicoIdempotencia;
     }
 
     @Operation(summary = "Listar livros", description = "Retorna uma página dos livros cadastrados. Use page (página iniciando em 0), size (itens por página) e sort para ordenar; por exemplo, sort=titulo,asc.")
     @GetMapping
     public ResponseEntity<Page<Livro>> listarLivros(
-            @ParameterObject @PageableDefault(size = 10, sort = "titulo") Pageable pageable) {
-        return ResponseEntity.ok(livroService.buscarTodos(pageable));
+            @ParameterObject @PageableDefault(size = 10, sort = "titulo") Pageable paginacao) {
+        return ResponseEntity.ok(servicoLivros.buscarTodos(paginacao));
     }
 
     @Operation(summary = "Consultar livro por UUID", description = "Retorna os dados editoriais do livro, incluindo autor e categoria. Retorna 404 quando não houver livro com o UUID informado.")
@@ -54,15 +52,15 @@ public class LivroController {
             @ApiResponse(responseCode = "404", description = "Não existe livro com esse UUID.")})
     @GetMapping("/{id}")
     public ResponseEntity<Livro> consultarLivro(@Parameter(description = "UUID do livro que será consultado.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
-        Livro livro = livroService.buscarPorId(id);
+        Livro livro = servicoLivros.buscarPorId(id);
         return livro == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(livro);
     }
 
     @Operation(summary = "Pesquisar livros", description = "Busca livros por palavra ou trecho no título, nas descrições, no nome do autor e na categoria. Informe o termo e, se desejar, use page, size e sort para paginar e ordenar os resultados.")
     @GetMapping("/pesquisa")
     public ResponseEntity<Page<Livro>> pesquisarLivros(@Parameter(description = "Palavra ou trecho a localizar no título, descrições, autor ou categoria.", example = "Duna") @RequestParam("termo") String termo,
-            @ParameterObject @PageableDefault(size = 10, sort = "titulo") Pageable pageable) {
-        return ResponseEntity.ok(livroService.buscarPorPalavraChave(termo, pageable));
+            @ParameterObject @PageableDefault(size = 10, sort = "titulo") Pageable paginacao) {
+        return ResponseEntity.ok(servicoLivros.buscarPorPalavraChave(termo, paginacao));
     }
 
     @Operation(summary = "Cadastrar livro", description = "Cria uma obra no catálogo. Informe os dados editoriais e os UUIDs de um autor e de uma categoria já cadastrados; o ID do livro é gerado pela API.")
@@ -72,14 +70,14 @@ public class LivroController {
     @PostMapping
     public ResponseEntity<Livro> cadastrarLivro(
             @Parameter(description = "Chave única gerada pelo cliente para esta tentativa. Reutilize a mesma chave somente ao repetir a mesma criação.", example = "livro-2026-001")
-            @RequestHeader("X-Idempotency-Key") String idempotencyKey,
+            @RequestHeader("X-Idempotency-Key") String chaveIdempotencia,
             @Valid @RequestBody Livro livro) {
-        IdempotentCreation<Livro> resultado = idempotencyService.createOnce(
-                "livros", idempotencyKey, () -> livroService.salvar(livro),
-                Livro::getId, livroService::buscarPorId);
-        Livro criado = resultado.value();
+        IdempotentCreation<Livro> resultado = servicoIdempotencia.criarUmaVez(
+                "livros", chaveIdempotencia, () -> servicoLivros.salvar(livro),
+                Livro::getId, servicoLivros::buscarPorId);
+        Livro criado = resultado.registro();
         return ResponseEntity.created(URI.create("/api/livros/" + criado.getId()))
-                .header("Idempotency-Replayed", Boolean.toString(resultado.replayed())).body(criado);
+                .header("Idempotency-Replayed", Boolean.toString(resultado.repetida())).body(criado);
     }
 
     @Operation(summary = "Criar ou atualizar livro", description = "Use o UUID da rota para identificar o livro. No corpo, envie todos os campos obrigatórios e os UUIDs de autor e categoria já cadastrados, sem incluir o ID do livro. Se não existir, cria com esse UUID (201); se já existir, substitui os dados (200).")
@@ -88,11 +86,11 @@ public class LivroController {
             @ApiResponse(responseCode = "400", description = "Os dados enviados não passaram pela validação.")})
     @PutMapping("/{id}")
     public ResponseEntity<Livro> criarOuAtualizarLivro(@Parameter(description = "UUID que identifica o livro. Se ainda não existir, será usado para criá-lo.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id, @Valid @RequestBody Livro livro) {
-        UpsertResult<Livro> resultado = livroService.atualizarOuCriar(id, livro);
-        if (resultado.created()) {
-            return ResponseEntity.created(URI.create("/api/livros/" + id)).body(resultado.value());
+        UpsertResult<Livro> resultado = servicoLivros.atualizarOuCriar(id, livro);
+        if (resultado.criado()) {
+            return ResponseEntity.created(URI.create("/api/livros/" + id)).body(resultado.registro());
         }
-        return ResponseEntity.ok(resultado.value());
+        return ResponseEntity.ok(resultado.registro());
     }
 
     @Operation(summary = "Remover livro", description = "Exclui do catálogo o livro identificado pelo UUID. Em sucesso, responde 204 sem corpo.")
@@ -101,7 +99,7 @@ public class LivroController {
             @ApiResponse(responseCode = "401", description = "Chave X-API-Key ausente ou inválida.", content = @Content(schema = @Schema(implementation = ResponseError.class)))})
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> removerLivro(@Parameter(description = "UUID do livro que será removido.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
-        livroService.excluir(id);
+        servicoLivros.excluir(id);
         return ResponseEntity.noContent().build();
     }
 }

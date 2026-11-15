@@ -14,46 +14,45 @@ import java.util.function.Supplier;
 public class IdempotencyService {
     private static final int MAX_KEY_LENGTH = 200;
 
-    private final IdempotencyRecordRepository repository;
+    private final IdempotencyRecordRepository repositorio;
 
-    public IdempotencyService(IdempotencyRecordRepository repository) {
-        this.repository = repository;
+    public IdempotencyService(IdempotencyRecordRepository repositorio) {
+        this.repositorio = repositorio;
     }
 
     /**
-     * Executa e registra uma criação na mesma transação. A chave é separada por recurso,
-     * para que, por exemplo, a chave "abc" de um autor não conflite com a de um livro.
+     * A chave é combinada com o tipo de recurso, evitando conflito entre cadastros diferentes.
      */
     @Transactional
-    public synchronized <T> IdempotentCreation<T> createOnce(
-            String resource,
-            String idempotencyKey,
-            Supplier<T> creation,
-            Function<T, UUID> idExtractor,
-            Function<UUID, T> resourceFinder) {
-        validateKey(idempotencyKey);
-        String scopedKey = resource + ":" + idempotencyKey;
+    public synchronized <T> IdempotentCreation<T> criarUmaVez(
+            String recurso,
+            String chaveIdempotencia,
+            Supplier<T> criar,
+            Function<T, UUID> extrairId,
+            Function<UUID, T> buscarRecurso) {
+        validarChave(chaveIdempotencia);
+        String chaveComEscopo = recurso + ":" + chaveIdempotencia;
 
-        IdempotencyRecord existingRecord = repository.findById(scopedKey).orElse(null);
-        if (existingRecord != null) {
-            T existingResource = resourceFinder.apply(existingRecord.getResourceId());
-            if (existingResource == null) {
+        IdempotencyRecord registroExistente = repositorio.findById(chaveComEscopo).orElse(null);
+        if (registroExistente != null) {
+            T recursoExistente = buscarRecurso.apply(registroExistente.getResourceId());
+            if (recursoExistente == null) {
                 throw new BusinessException("Esta chave de idempotência já foi usada, mas o cadastro foi removido. Envie uma nova chave.");
             }
-            return new IdempotentCreation<>(existingResource, true);
+            return new IdempotentCreation<>(recursoExistente, true);
         }
 
-        T createdResource = creation.get();
-        UUID createdId = idExtractor.apply(createdResource);
-        repository.saveAndFlush(new IdempotencyRecord(scopedKey, resource, createdId));
-        return new IdempotentCreation<>(createdResource, false);
+        T recursoCriado = criar.get();
+        UUID idCriado = extrairId.apply(recursoCriado);
+        repositorio.saveAndFlush(new IdempotencyRecord(chaveComEscopo, recurso, idCriado));
+        return new IdempotentCreation<>(recursoCriado, false);
     }
 
-    private void validateKey(String key) {
-        if (key == null || key.isBlank()) {
+    private void validarChave(String chave) {
+        if (chave == null || chave.isBlank()) {
             throw new BusinessException("Informe o cabeçalho X-Idempotency-Key com uma chave única.");
         }
-        if (key.length() > MAX_KEY_LENGTH) {
+        if (chave.length() > MAX_KEY_LENGTH) {
             throw new BusinessException("A chave X-Idempotency-Key deve ter no máximo 200 caracteres.");
         }
     }

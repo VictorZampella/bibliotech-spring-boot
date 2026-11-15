@@ -2,7 +2,6 @@ package br.com.victordecurtis.livrariadigital.service;
 
 import br.com.victordecurtis.livrariadigital.model.Livro;
 import br.com.victordecurtis.livrariadigital.repository.LivroRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -16,23 +15,22 @@ import java.util.stream.Collectors;
 
 @Service
 public class LivroService {
-    private final LivroRepository livroRepository;
+    private final LivroRepository repositorioLivros;
 
-    @Autowired
-    public LivroService(LivroRepository livroRepository) {
-        this.livroRepository = livroRepository;
+    public LivroService(LivroRepository repositorioLivros) {
+        this.repositorioLivros = repositorioLivros;
     }
 
-    public Page<Livro> buscarTodos(Pageable pageable) {
-        return livroRepository.findAll(pageable);
+    public Page<Livro> buscarTodos(Pageable paginacao) {
+        return repositorioLivros.findAll(paginacao);
     }
 
     public Livro buscarPorId(UUID id) {
-        return livroRepository.findById(id).orElse(null);
+        return repositorioLivros.findById(id).orElse(null);
     }
 
-    public Page<Livro> buscarPorPalavraChave(String busca, Pageable pageable) {
-        List<Livro> resultados = livroRepository.findAll().stream()
+    public Page<Livro> buscarPorPalavraChave(String busca, Pageable paginacao) {
+        List<Livro> resultados = repositorioLivros.findAll().stream()
                 .filter(livro -> livro.getTitulo().toLowerCase().contains(busca.toLowerCase()) ||
                         livro.getDescricaoCurta().toLowerCase().contains(busca.toLowerCase()) ||
                         livro.getDescricaoLonga().toLowerCase().contains(busca.toLowerCase()) ||
@@ -44,7 +42,7 @@ public class LivroService {
                 .collect(Collectors.toList());
 
         Comparator<Livro> ordenacao = null;
-        for (Sort.Order ordem : pageable.getSort()) {
+        for (Sort.Order ordem : paginacao.getSort()) {
             Comparator<Livro> proximaOrdenacao = comparadorPara(ordem);
             ordenacao = ordenacao == null ? proximaOrdenacao : ordenacao.thenComparing(proximaOrdenacao);
         }
@@ -52,9 +50,9 @@ public class LivroService {
             resultados.sort(ordenacao);
         }
 
-        int inicio = (int) Math.min(pageable.getOffset(), resultados.size());
-        int fim = (int) Math.min((long) inicio + pageable.getPageSize(), resultados.size());
-        return new PageImpl<>(resultados.subList(inicio, fim), pageable, resultados.size());
+        int inicio = (int) Math.min(paginacao.getOffset(), resultados.size());
+        int fim = (int) Math.min((long) inicio + paginacao.getPageSize(), resultados.size());
+        return new PageImpl<>(resultados.subList(inicio, fim), paginacao, resultados.size());
     }
 
     private Comparator<Livro> comparadorPara(Sort.Order ordem) {
@@ -74,15 +72,15 @@ public class LivroService {
         if (livro.getId() == null) {
             livro.setId(UUID.randomUUID());
         }
-        return livroRepository.save(livro);
+        return repositorioLivros.save(livro);
     }
 
     public void excluir(UUID id) {
-        livroRepository.deleteById(id);
+        repositorioLivros.deleteById(id);
     }
 
     public UpsertResult<Livro> atualizarOuCriar(UUID id, Livro dados) {
-        Livro livro = livroRepository.findById(id).orElse(null);
+        Livro livro = repositorioLivros.findById(id).orElse(null);
         boolean criado = livro == null;
 
         if (criado) {
@@ -100,7 +98,7 @@ public class LivroService {
             livro.setAutor(dados.getAutor());
         }
 
-        return new UpsertResult<>(livroRepository.save(livro), criado);
+        return new UpsertResult<>(repositorioLivros.save(livro), criado);
     }
 }
 
