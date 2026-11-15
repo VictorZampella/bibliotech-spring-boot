@@ -1,6 +1,7 @@
 package br.com.victordecurtis.livrariadigital.controller;
 
 import br.com.victordecurtis.livrariadigital.model.Autor;
+import br.com.victordecurtis.livrariadigital.assembler.AutorModelAssembler;
 import br.com.victordecurtis.livrariadigital.handler.ResponseError;
 import br.com.victordecurtis.livrariadigital.service.AutorService;
 import br.com.victordecurtis.livrariadigital.service.IdempotencyService;
@@ -19,12 +20,17 @@ import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.UUID;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Tag(name = "Autores", description = "Operações para cadastrar, consultar, atualizar e remover autores do catálogo.")
 @ApiResponses({@ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde o tempo informado em Retry-After.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ResponseError.class), examples = @ExampleObject(value = "{\"status\":\"error\",\"statusCode\":429,\"error\":\"Too Many Requests\",\"errors\":[\"Limite de 20 requisições por minuto excedido. Aguarde o tempo indicado no cabeçalho Retry-After e tente novamente.\"]}")))})
@@ -33,26 +39,33 @@ import java.util.UUID;
 public class AutorController {
     private final AutorService servicoAutores;
     private final IdempotencyService servicoIdempotencia;
+    private final AutorModelAssembler montador;
+    private final PagedResourcesAssembler<Autor> montadorDePaginas;
 
-    public AutorController(AutorService servicoAutores, IdempotencyService servicoIdempotencia) {
+    public AutorController(AutorService servicoAutores, IdempotencyService servicoIdempotencia,
+                           AutorModelAssembler montador, PagedResourcesAssembler<Autor> montadorDePaginas) {
         this.servicoAutores = servicoAutores;
         this.servicoIdempotencia = servicoIdempotencia;
+        this.montador = montador;
+        this.montadorDePaginas = montadorDePaginas;
     }
 
     @Operation(summary = "Listar autores", description = "Retorna uma página dos autores cadastrados. Use page (página iniciando em 0), size (itens por página) e sort para ordenar; por exemplo, sort=nome,asc.")
     @GetMapping
-    public ResponseEntity<Page<Autor>> listarAutores(
+    public ResponseEntity<PagedModel<EntityModel<Autor>>> listarAutores(
             @ParameterObject @PageableDefault(size = 10, sort = "nome") Pageable paginacao) {
-        return ResponseEntity.ok(servicoAutores.buscarTodos(paginacao));
+        var autores = servicoAutores.buscarTodos(paginacao);
+        var link = linkTo(methodOn(AutorController.class).listarAutores(paginacao)).withSelfRel();
+        return ResponseEntity.ok(montadorDePaginas.toModel(autores, montador, link));
     }
 
     @Operation(summary = "Consultar autor por UUID", description = "Busca os dados biográficos do autor pelo identificador informado. Retorna 404 quando não houver autor com esse UUID.")
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Autor encontrado."),
             @ApiResponse(responseCode = "404", description = "Não existe autor com esse UUID.")})
     @GetMapping("/{id}")
-    public ResponseEntity<Autor> consultarAutor(@Parameter(description = "UUID do autor que será consultado.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
+    public ResponseEntity<EntityModel<Autor>> consultarAutor(@Parameter(description = "UUID do autor que será consultado.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
         Autor autor = servicoAutores.buscarPorId(id);
-        return autor == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(autor);
+        return autor == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(montador.toModel(autor));
     }
 
     @Operation(summary = "Cadastrar autor", description = "Cria um perfil de autor. Informe nome, data de nascimento no formato AAAA-MM-DD, biografia, URL pública da foto e nacionalidade. O ID é gerado pela API.")
@@ -60,7 +73,7 @@ public class AutorController {
             @ApiResponse(responseCode = "400", description = "Os dados enviados não passaram pela validação."),
             @ApiResponse(responseCode = "409", description = "A chave já foi usada, mas o registro correspondente foi removido.")})
     @PostMapping
-    public ResponseEntity<Autor> cadastrarAutor(
+    public ResponseEntity<EntityModel<Autor>> cadastrarAutor(
             @Parameter(description = "Chave única gerada pelo cliente para esta tentativa. Reutilize a mesma chave somente ao repetir a mesma criação.", example = "autor-2026-001")
             @RequestHeader("X-Idempotency-Key") String chaveIdempotencia,
             @Valid @RequestBody Autor autor) {
@@ -69,7 +82,7 @@ public class AutorController {
                 Autor::getId, servicoAutores::buscarPorId);
         Autor criado = resultado.registro();
         return ResponseEntity.created(URI.create("/api/autores/" + criado.getId()))
-                .header("Idempotency-Replayed", Boolean.toString(resultado.repetida())).body(criado);
+                .header("Idempotency-Replayed", Boolean.toString(resultado.repetida())).body(montador.toModel(criado));
     }
 
     @Operation(summary = "Criar ou atualizar autor", description = "Use o UUID da rota para identificar o autor. No corpo, envie todos os campos obrigatórios do perfil, sem incluir o ID. Se o autor não existir, cria o perfil (201); se já existir, substitui seus dados (200).")
@@ -77,12 +90,12 @@ public class AutorController {
             @ApiResponse(responseCode = "201", description = "Novo perfil de autor criado."),
             @ApiResponse(responseCode = "400", description = "Os dados enviados não passaram pela validação.")})
     @PutMapping("/{id}")
-    public ResponseEntity<Autor> criarOuAtualizarAutor(@Parameter(description = "UUID que identifica o autor. Se ainda não existir, será usado para criá-lo.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id, @Valid @RequestBody Autor autor) {
+    public ResponseEntity<EntityModel<Autor>> criarOuAtualizarAutor(@Parameter(description = "UUID que identifica o autor. Se ainda não existir, será usado para criá-lo.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id, @Valid @RequestBody Autor autor) {
         UpsertResult<Autor> resultado = servicoAutores.atualizarOuCriar(id, autor);
         if (resultado.criado()) {
-            return ResponseEntity.created(URI.create("/api/autores/" + id)).body(resultado.registro());
+            return ResponseEntity.created(URI.create("/api/autores/" + id)).body(montador.toModel(resultado.registro()));
         }
-        return ResponseEntity.ok(resultado.registro());
+        return ResponseEntity.ok(montador.toModel(resultado.registro()));
     }
 
     @Operation(summary = "Remover autor", description = "Exclui do catálogo o autor identificado pelo UUID. Em sucesso, responde 204 sem corpo.")

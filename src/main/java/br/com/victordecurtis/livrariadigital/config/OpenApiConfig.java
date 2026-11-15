@@ -33,6 +33,12 @@ import java.util.Map;
 
                         Para testar uma operação, abra-a e clique em **Try it out** (testar). Preencha os campos e clique em **Execute** (executar). A resposta e eventuais mensagens de validação aparecem logo abaixo.
 
+                        ### Links e versões
+
+                        As respostas de consulta, cadastro, atualização e listagem incluem links `_links` para navegar pela API. Em um livro, por exemplo, `self` abre o próprio livro, `update` aponta para a rota de atualização, `delete` indica a rota de remoção, e `autor` e `categoria` levam aos cadastros relacionados. Nas listas, os links `first`, `prev`, `self`, `next` e `last` ajudam a percorrer as páginas.
+
+                        A consulta **GET `/api/livros/{id}`** aceita o cabeçalho `X-API-Version`. Sem esse cabeçalho, a API usa a versão **1**, que mantém autor e categoria como objetos completos. Com `X-API-Version: 2`, retorna uma representação resumida com `autorNome` e `categoriaNome`. As duas versões consultam o mesmo livro; muda apenas o formato da resposta.
+
                         ### Como autorizar operações de remoção
 
                         1. Cadastre um leitor em **POST `/api/usuarios`**, caso ainda não tenha um.
