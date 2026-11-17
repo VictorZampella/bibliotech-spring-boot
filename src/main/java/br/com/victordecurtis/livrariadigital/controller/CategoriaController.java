@@ -105,11 +105,12 @@ public class CategoriaController {
         return ResponseEntity.ok(montador.toModel(resultado.registro()));
     }
 
-    @Operation(summary = "Remover categoria", description = "Exclui do catálogo a categoria identificada pelo UUID. Em sucesso, responde 204 sem corpo.")
+    @Operation(summary = "Remover categoria", description = "Exclui do catálogo a categoria identificada pelo UUID. Em sucesso, responde 204 sem corpo. A remoção retorna 409 se algum livro ainda estiver vinculado à categoria.")
     @SecurityRequirement(name = "ApiKeyAuth")
     @ApiResponses({@ApiResponse(responseCode = "204", description = "Categoria removida com sucesso."),
             @ApiResponse(responseCode = "401", description = "Chave X-API-Key ausente ou inválida.", content = @Content(schema = @Schema(implementation = ResponseError.class))),
-            @ApiResponse(responseCode = "403", description = "Somente contas Premium ou Admin podem remover categorias.")})
+            @ApiResponse(responseCode = "403", description = "Somente contas Premium ou Admin podem remover categorias."),
+            @ApiResponse(responseCode = "409", description = "A categoria está vinculada a um ou mais livros e não pode ser removida.", content = @Content(schema = @Schema(implementation = ResponseError.class)))})
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> removerCategoria(@Parameter(description = "UUID da categoria que será removida.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
         servicoCategorias.excluir(id);

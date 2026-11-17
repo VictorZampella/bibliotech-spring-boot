@@ -105,11 +105,12 @@ public class AutorController {
         return ResponseEntity.ok(montador.toModel(resultado.registro()));
     }
 
-    @Operation(summary = "Remover autor", description = "Exclui do catálogo o autor identificado pelo UUID. Em sucesso, responde 204 sem corpo.")
+    @Operation(summary = "Remover autor", description = "Exclui do catálogo o autor identificado pelo UUID. Em sucesso, responde 204 sem corpo. A remoção retorna 409 se algum livro ainda estiver vinculado ao autor.")
     @SecurityRequirement(name = "ApiKeyAuth")
     @ApiResponses({@ApiResponse(responseCode = "204", description = "Autor removido com sucesso."),
             @ApiResponse(responseCode = "401", description = "Chave X-API-Key ausente ou inválida.", content = @Content(schema = @Schema(implementation = ResponseError.class))),
-            @ApiResponse(responseCode = "403", description = "Somente contas Premium ou Admin podem remover autores.")})
+            @ApiResponse(responseCode = "403", description = "Somente contas Premium ou Admin podem remover autores."),
+            @ApiResponse(responseCode = "409", description = "O autor está vinculado a um ou mais livros e não pode ser removido.", content = @Content(schema = @Schema(implementation = ResponseError.class)))})
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> removerAutor(@Parameter(description = "UUID do autor que será removido.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
         servicoAutores.excluir(id);
