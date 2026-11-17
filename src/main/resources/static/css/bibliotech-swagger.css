@@ -71,6 +71,15 @@ body {
   width: min(1160px, 100%); margin: 0 auto; color: rgba(255,255,255,.72);
   font-size: 10px; letter-spacing: .13em; text-align: right; text-transform: uppercase;
 }
+.bibliotech-auth-status {
+  box-sizing: border-box; width: min(1160px, 100%); margin: 0 auto;
+  padding: 10px 14px; border: 1px solid rgba(255,255,255,.2); border-radius: 9px;
+  color: #fff; background: rgba(8,10,18,.68); font-size: 13px; line-height: 1.5;
+}
+.bibliotech-auth-status--neutro { border-color: rgba(255,255,255,.22); }
+.bibliotech-auth-status--info { border-color: rgba(17,213,232,.62); background: rgba(8,71,88,.62); }
+.bibliotech-auth-status--ok { border-color: rgba(107,232,177,.72); background: rgba(14,83,66,.72); }
+.bibliotech-auth-status--erro { border-color: rgba(255,132,145,.78); background: rgba(111,35,48,.72); }
 
 .swagger-ui { color: var(--bibliotech-ink); background: var(--bibliotech-canvas); }
 .swagger-ui .topbar { display: none; }

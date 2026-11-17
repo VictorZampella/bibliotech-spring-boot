@@ -56,7 +56,8 @@ public class BiblioTechSwaggerIndexPageTransformer extends SwaggerIndexPageTrans
             pagina = StreamUtils.copyToString(entrada, StandardCharsets.UTF_8);
         }
         pagina = pagina.replace("<title>Swagger UI</title>", "<title>BiblioTech | API</title>");
-        pagina = pagina.replace("</head>", "<link rel=\"stylesheet\" href=\"/css/bibliotech-swagger.css?v=4\"></head>");
+        pagina = pagina.replace("</head>", "<link rel=\"stylesheet\" href=\"/css/bibliotech-swagger.css?v=5\"></head>");
+        pagina = pagina.replace("</body>", "<script src=\"/js/bibliotech-swagger-status.js?v=1\"></script></body>");
 
         Matcher tagCorpo = PADRAO_TAG_CORPO.matcher(pagina);
         if (tagCorpo.find()) {
