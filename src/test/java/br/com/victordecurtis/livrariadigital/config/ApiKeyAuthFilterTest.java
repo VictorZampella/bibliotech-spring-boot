@@ -18,43 +18,64 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ApiKeyAuthFilterTest {
 
     @Test
-    void membroPodeConsultarLivros() throws Exception {
-        ApiKeyService chaves = chaves("membro", PapelAcesso.MEMBRO);
+    void membroBasePodeConsultarTodosOsRecursos() throws Exception {
+        ApiKeyService chaves = chaves("membro", PapelAcesso.MEMBRO, PlanoUtilizacao.BASE);
         AtomicInteger encaminhadas = new AtomicInteger();
         ApiKeyAuthFilter filtro = new ApiKeyAuthFilter(chaves, new ObjectMapper());
 
-        for (String caminho : new String[]{"/api/livros", "/api/livros/00000000-0000-0000-0000-000000000001",
-                "/api/livros/pesquisa"}) {
+        for (String caminho : new String[]{
+                "/api/livros", "/api/livros/00000000-0000-0000-0000-000000000001", "/api/livros/pesquisa",
+                "/api/autores", "/api/autores/00000000-0000-0000-0000-000000000001",
+                "/api/categorias", "/api/categorias/00000000-0000-0000-0000-000000000001",
+                "/api/usuarios", "/api/usuarios/00000000-0000-0000-0000-000000000001"}) {
             MockHttpServletResponse resposta = executar(filtro, "GET", caminho, "membro", encaminhadas);
             assertEquals(200, resposta.getStatus());
         }
-        assertEquals(3, encaminhadas.get());
+        assertEquals(9, encaminhadas.get());
     }
 
     @Test
-    void membroNaoPodeCadastrarAtualizarOuRemoverLivros() throws Exception {
-        ApiKeyService chaves = chaves("membro", PapelAcesso.MEMBRO);
+    void membroPremiumPodeExecutarOperacoesDeEscritaEmTodosOsRecursos() throws Exception {
+        AtomicInteger encaminhadas = new AtomicInteger();
+        ApiKeyAuthFilter filtro = new ApiKeyAuthFilter(
+                chaves("premium", PapelAcesso.MEMBRO, PlanoUtilizacao.PREMIUM), new ObjectMapper());
+
+        for (String[] operacao : new String[][]{
+                {"POST", "/api/livros"}, {"PUT", "/api/livros/00000000-0000-0000-0000-000000000001"},
+                {"DELETE", "/api/livros/00000000-0000-0000-0000-000000000001"},
+                {"POST", "/api/autores"}, {"PUT", "/api/autores/00000000-0000-0000-0000-000000000001"},
+                {"DELETE", "/api/autores/00000000-0000-0000-0000-000000000001"},
+                {"POST", "/api/categorias"}, {"PUT", "/api/categorias/00000000-0000-0000-0000-000000000001"},
+                {"DELETE", "/api/categorias/00000000-0000-0000-0000-000000000001"},
+                {"POST", "/api/usuarios"}, {"PUT", "/api/usuarios/00000000-0000-0000-0000-000000000001"},
+                {"DELETE", "/api/usuarios/00000000-0000-0000-0000-000000000001"}}) {
+            MockHttpServletResponse resposta = executar(filtro, operacao[0], operacao[1], "premium", encaminhadas);
+            assertEquals(200, resposta.getStatus());
+        }
+        assertEquals(12, encaminhadas.get());
+    }
+
+    @Test
+    void membroBaseNaoPodeCadastrarAtualizarOuRemoverRecursos() throws Exception {
+        ApiKeyService chaves = chaves("membro", PapelAcesso.MEMBRO, PlanoUtilizacao.BASE);
         AtomicInteger encaminhadas = new AtomicInteger();
         ApiKeyAuthFilter filtro = new ApiKeyAuthFilter(chaves, new ObjectMapper());
 
-        for (String metodo : new String[]{"POST", "PUT", "DELETE"}) {
-            String caminho = "POST".equals(metodo) ? "/api/livros"
-                    : "/api/livros/00000000-0000-0000-0000-000000000001";
+        for (String[] operacao : new String[][]{
+                {"POST", "/api/livros"}, {"PUT", "/api/livros/00000000-0000-0000-0000-000000000001"},
+                {"DELETE", "/api/livros/00000000-0000-0000-0000-000000000001"},
+                {"POST", "/api/autores"}, {"PUT", "/api/autores/00000000-0000-0000-0000-000000000001"},
+                {"DELETE", "/api/autores/00000000-0000-0000-0000-000000000001"},
+                {"POST", "/api/categorias"}, {"PUT", "/api/categorias/00000000-0000-0000-0000-000000000001"},
+                {"DELETE", "/api/categorias/00000000-0000-0000-0000-000000000001"},
+                {"POST", "/api/usuarios"}, {"PUT", "/api/usuarios/00000000-0000-0000-0000-000000000001"},
+                {"DELETE", "/api/usuarios/00000000-0000-0000-0000-000000000001"}}) {
+            String metodo = operacao[0];
+            String caminho = operacao[1];
             MockHttpServletResponse resposta = executar(filtro, metodo, caminho, "membro", encaminhadas);
             assertEquals(403, resposta.getStatus());
-            assertTrue(resposta.getContentAsString().contains("Membro"));
+            assertTrue(resposta.getContentAsString().contains("BASE"));
         }
-        assertEquals(0, encaminhadas.get());
-    }
-
-    @Test
-    void membroNaoPodeAcessarAutores() throws Exception {
-        AtomicInteger encaminhadas = new AtomicInteger();
-        MockHttpServletResponse resposta = executar(new ApiKeyAuthFilter(chaves("membro", PapelAcesso.MEMBRO),
-                new ObjectMapper()), "GET", "/api/autores", "membro", encaminhadas);
-
-        assertEquals(403, resposta.getStatus());
-        assertTrue(resposta.getContentAsString().contains("Membro"));
         assertEquals(0, encaminhadas.get());
     }
 
@@ -94,9 +115,13 @@ class ApiKeyAuthFilterTest {
     }
 
     private FakeApiKeyService chaves(String chave, PapelAcesso papel) {
+        return chaves(chave, papel, PlanoUtilizacao.BASE);
+    }
+
+    private FakeApiKeyService chaves(String chave, PapelAcesso papel, PlanoUtilizacao plano) {
         FakeApiKeyService servico = new FakeApiKeyService();
         servico.registrar(chave, new ApiKeyService.Acesso(
-                "hash-" + chave, UUID.randomUUID(), papel, PlanoUtilizacao.BASE));
+                "hash-" + chave, UUID.randomUUID(), papel, plano));
         return servico;
     }
 

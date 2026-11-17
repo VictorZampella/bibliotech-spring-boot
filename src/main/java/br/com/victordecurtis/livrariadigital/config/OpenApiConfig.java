@@ -43,18 +43,18 @@ import java.util.Map;
 
                         1. Cadastre um leitor em **POST `/api/usuarios`** ou use uma conta existente.
                         2. Faça login em **POST `/api/auth/login`**. A resposta informa o papel da conta e mostra a chave `apiKey` uma única vez.
-                        3. Para operações administrativas, a conta precisa ser **ADMIN**. No ambiente local, use o leitor de demonstração `leitor.demo1@example.com` com a senha `BiblioDemo123`. No Render, cadastre um leitor, copie o `usuarioId` retornado e configure esse UUID em `BIBLIOTECH_ADMIN_USER_IDS`; depois faça login novamente.
+                        3. Contas **MEMBRO BASE** podem consultar os dados. Para cadastrar, atualizar ou remover, use uma conta **MEMBRO PREMIUM** ou **ADMIN**. No ambiente local, o leitor `leitor.demo1@example.com` com senha `BiblioDemo123` é Admin; `leitor.demo3@example.com` é Premium. No Render, defina o plano pela variável `BIBLIOTECH_PREMIUM_USER_IDS` ou o papel pela `BIBLIOTECH_ADMIN_USER_IDS`.
                         4. Clique em **Authorize** no topo da página, cole a chave no campo `X-API-Key` e confirme. Use então as rotas permitidas para o papel da conta.
 
-                        O cadeado indica que a operação exige uma chave válida e um papel autorizado; basta informar a chave uma vez no botão **Authorize**. O Swagger pode exibir **Authorized** assim que o texto é salvo, mas isso não confirma que a chave é válida. Na execução, uma chave ausente ou inválida resulta em **401 (Não autorizado)**; uma chave válida de **MEMBRO** em uma rota administrativa resulta em **403 (Acesso proibido)**.
+                        O cadeado indica que a operação exige uma chave válida e um nível de acesso compatível; informe a chave uma vez no botão **Authorize**. O Swagger pode exibir **Authorized** assim que o texto é salvo, mas isso não confirma que a chave é válida. Na execução, uma chave ausente ou inválida resulta em **401 (Não autorizado)**; uma conta sem permissão para a operação recebe **403 (Acesso proibido)**.
 
                         Para encerrar o acesso, execute **POST `/api/auth/logout`** com a chave atual. Depois do logout, faça login novamente para obter outra chave.
 
                         ### Papéis, planos e limites
 
-                        Todo novo leitor recebe o papel **MEMBRO** e o plano **BASE**. Membros podem consultar livros; somente usuários **ADMIN** podem cadastrar, atualizar, remover ou acessar os demais recursos administrativos. O servidor valida o papel em cada requisição; enviar `papel` ou `plano` no corpo não altera essas permissões.
+                        Todo novo leitor recebe o papel **MEMBRO** e o plano **BASE**. Contas **MEMBRO BASE** podem consultar livros, autores, categorias e leitores, mas não podem cadastrar, atualizar ou remover registros. Contas **MEMBRO PREMIUM** podem consultar e administrar todos esses registros, inclusive remover leitores. Contas **ADMIN** também podem administrar todos os recursos. O cadastro público de leitores continua disponível em **POST `/api/usuarios`**. O servidor valida o papel e o plano em cada requisição; enviar `papel` ou `plano` no corpo não altera essas permissões.
 
-                        Os papéis e planos são independentes. O plano **BASE** permite 30 requisições por minuto por chave; o **PREMIUM**, 100. Além disso, cada IP tem limite de 120 requisições por minuto. Ao exceder qualquer limite, a API responde **429** com `Retry-After`; os cabeçalhos `X-Rate-Limit-IP-*` e `X-Rate-Limit-Key-*` mostram o limite e o saldo de cada controle.
+                        O papel **ADMIN** mantém acesso completo, independentemente do plano. Para contas **MEMBRO**, o plano define as permissões e o limite: **BASE** permite somente consultas e até 30 requisições por minuto por chave; **PREMIUM** permite administrar os recursos e até 100 requisições por minuto. Além disso, cada IP tem limite de 120 requisições por minuto. Ao exceder qualquer limite, a API responde **429** com `Retry-After`; os cabeçalhos `X-Rate-Limit-IP-*` e `X-Rate-Limit-Key-*` mostram o limite e o saldo de cada controle.
 
                         Para promover uma conta com segurança, configure o UUID retornado no login em `BIBLIOTECH_ADMIN_USER_IDS` no ambiente do servidor. Para conceder o plano Premium, use `BIBLIOTECH_PREMIUM_USER_IDS`. Aceitam-se vários UUIDs separados por vírgula. O cliente não pode alterar esses valores no corpo de cadastro.
 
@@ -74,7 +74,7 @@ import java.util.Map;
                 url = "/"
         ))
 @SecurityScheme(name = "ApiKeyAuth", type = SecuritySchemeType.APIKEY,
-        in = SecuritySchemeIn.HEADER, paramName = "X-API-Key", description = "Cole aqui a apiKey retornada por POST /api/auth/login. As rotas administrativas exigem uma chave de usuário ADMIN; usuários MEMBRO podem consultar somente livros. O Swagger salva a chave, mas a API valida o papel em cada requisição.")
+        in = SecuritySchemeIn.HEADER, paramName = "X-API-Key", description = "Cole aqui a apiKey retornada por POST /api/auth/login. MEMBRO BASE pode consultar livros, autores, categorias e leitores. MEMBRO PREMIUM pode administrar esses recursos; ADMIN também tem acesso completo. O Swagger salva a chave, mas a API valida o papel e o plano em cada requisição.")
 public class OpenApiConfig {
 
     @Bean

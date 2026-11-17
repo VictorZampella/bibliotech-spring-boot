@@ -51,9 +51,8 @@ public class AutorController {
         this.montadorDePaginas = montadorDePaginas;
     }
 
-    @Operation(summary = "Listar autores", description = "Retorna uma página dos autores cadastrados. Use page (página iniciando em 0), size (itens por página) e sort para ordenar; por exemplo, sort=nome,asc.")
+    @Operation(summary = "Listar autores", description = "Retorna uma página dos autores cadastrados. Contas MEMBRO BASE, MEMBRO PREMIUM e ADMIN podem consultar a lista. Use page (página iniciando em 0), size (itens por página) e sort para ordenar; por exemplo, sort=nome,asc.")
     @SecurityRequirement(name = "ApiKeyAuth")
-    @ApiResponses(@ApiResponse(responseCode = "403", description = "Somente usuários Admin podem consultar autores."))
     @GetMapping
     public ResponseEntity<PagedModel<EntityModel<Autor>>> listarAutores(
             @ParameterObject @PageableDefault(size = 10, sort = "nome") Pageable paginacao) {
@@ -62,9 +61,8 @@ public class AutorController {
         return ResponseEntity.ok(montadorDePaginas.toModel(autores, montador, link));
     }
 
-    @Operation(summary = "Consultar autor por UUID", description = "Busca os dados biográficos do autor pelo identificador informado. Retorna 404 quando não houver autor com esse UUID.")
+    @Operation(summary = "Consultar autor por UUID", description = "Busca os dados biográficos do autor pelo identificador informado. Contas MEMBRO BASE, MEMBRO PREMIUM e ADMIN podem consultar. Retorna 404 quando não houver autor com esse UUID.")
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Autor encontrado."),
-            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem consultar autores."),
             @ApiResponse(responseCode = "404", description = "Não existe autor com esse UUID.")})
     @SecurityRequirement(name = "ApiKeyAuth")
     @GetMapping("/{id}")
@@ -76,7 +74,7 @@ public class AutorController {
     @Operation(summary = "Cadastrar autor", description = "Cria um perfil de autor. Informe nome, data de nascimento no formato AAAA-MM-DD, biografia, URL pública da foto e nacionalidade. O ID é gerado pela API.")
     @ApiResponses({@ApiResponse(responseCode = "201", description = "Autor cadastrado com sucesso."),
             @ApiResponse(responseCode = "400", description = "Dados inválidos, JSON malformado/incompleto ou valor em formato incorreto."),
-            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem cadastrar autores."),
+            @ApiResponse(responseCode = "403", description = "Somente contas Premium ou Admin podem cadastrar autores."),
             @ApiResponse(responseCode = "409", description = "A chave já foi usada, mas o registro correspondente foi removido.")})
     @SecurityRequirement(name = "ApiKeyAuth")
     @PostMapping
@@ -95,7 +93,7 @@ public class AutorController {
     @Operation(summary = "Criar ou atualizar autor", description = "Use o UUID da rota para identificar o autor. No corpo, envie todos os campos obrigatórios do perfil, sem incluir o ID. Se o autor não existir, cria o perfil (201); se já existir, substitui seus dados (200).")
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Perfil existente atualizado."),
             @ApiResponse(responseCode = "201", description = "Novo perfil de autor criado."),
-            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem atualizar autores."),
+            @ApiResponse(responseCode = "403", description = "Somente contas Premium ou Admin podem atualizar autores."),
             @ApiResponse(responseCode = "400", description = "Dados inválidos, JSON malformado/incompleto ou valor em formato incorreto.")})
     @SecurityRequirement(name = "ApiKeyAuth")
     @PutMapping("/{id}")
@@ -111,7 +109,7 @@ public class AutorController {
     @SecurityRequirement(name = "ApiKeyAuth")
     @ApiResponses({@ApiResponse(responseCode = "204", description = "Autor removido com sucesso."),
             @ApiResponse(responseCode = "401", description = "Chave X-API-Key ausente ou inválida.", content = @Content(schema = @Schema(implementation = ResponseError.class))),
-            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem remover autores.")})
+            @ApiResponse(responseCode = "403", description = "Somente contas Premium ou Admin podem remover autores.")})
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> removerAutor(@Parameter(description = "UUID do autor que será removido.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
         servicoAutores.excluir(id);

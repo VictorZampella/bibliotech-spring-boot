@@ -2,6 +2,7 @@ package br.com.victordecurtis.livrariadigital.config;
 
 import br.com.victordecurtis.livrariadigital.handler.ResponseError;
 import br.com.victordecurtis.livrariadigital.model.PapelAcesso;
+import br.com.victordecurtis.livrariadigital.model.PlanoUtilizacao;
 import br.com.victordecurtis.livrariadigital.service.ApiKeyService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
@@ -47,7 +48,8 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         }
         if (acesso != null) request.setAttribute(ApiKeyService.ATRIBUTO_ACESSO, acesso);
 
-        if (ehConsultaPublicaDeLivro(metodo, caminho) || ehCadastroPublicoDeLeitor(metodo, caminho)) {
+        if ((acesso == null && ehConsultaPublicaDeLivro(metodo, caminho))
+                || (acesso == null && ehCadastroPublicoDeLeitor(metodo, caminho))) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -58,13 +60,18 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        if (acesso.papel() != PapelAcesso.ADMIN) {
-            responderErro(response, HttpServletResponse.SC_FORBIDDEN, "Forbidden",
-                    "O papel Membro permite consultar livros, mas não acessar ou alterar este recurso.");
+        if (acesso.papel() == PapelAcesso.ADMIN || acesso.plano() == PlanoUtilizacao.PREMIUM) {
+            filterChain.doFilter(request, response);
             return;
         }
 
-        filterChain.doFilter(request, response);
+        if (ehConsultaPermitidaAoMembro(metodo, caminho)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        responderErro(response, HttpServletResponse.SC_FORBIDDEN, "Forbidden",
+                "O plano BASE permite consultar os recursos, mas somente PREMIUM ou ADMIN pode cadastrar, atualizar ou remover.");
     }
 
     private ApiKeyService.Acesso acessoDaRequisicao(HttpServletRequest request, String chave) {
@@ -78,9 +85,22 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
                 && ("/api/auth/login".equals(caminho) || "/api/auth/logout".equals(caminho));
     }
 
+    private boolean ehConsultaPermitidaAoMembro(String metodo, String caminho) {
+        if (!"GET".equalsIgnoreCase(metodo)) return false;
+        return ehRecurso(metodo, caminho, "/api/livros")
+                || ehRecurso(metodo, caminho, "/api/autores")
+                || ehRecurso(metodo, caminho, "/api/categorias")
+                || ehRecurso(metodo, caminho, "/api/usuarios");
+    }
+
     private boolean ehConsultaPublicaDeLivro(String metodo, String caminho) {
         return "GET".equalsIgnoreCase(metodo)
                 && ("/api/livros".equals(caminho) || caminho.startsWith("/api/livros/"));
+    }
+
+    private boolean ehRecurso(String metodo, String caminho, String recurso) {
+        return "GET".equalsIgnoreCase(metodo)
+                && (recurso.equals(caminho) || caminho.startsWith(recurso + "/"));
     }
 
     private boolean ehCadastroPublicoDeLeitor(String metodo, String caminho) {

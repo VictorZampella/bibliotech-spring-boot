@@ -96,7 +96,7 @@ public class LivroController {
     @Operation(summary = "Cadastrar livro", description = "Cria uma obra no catálogo. Informe os dados editoriais e os UUIDs de um autor e de uma categoria já cadastrados; o ID do livro é gerado pela API.")
     @ApiResponses({@ApiResponse(responseCode = "201", description = "Livro cadastrado com sucesso."),
             @ApiResponse(responseCode = "400", description = "Dados inválidos, JSON malformado/incompleto ou valor em formato incorreto."),
-            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem cadastrar livros."),
+            @ApiResponse(responseCode = "403", description = "Somente contas Premium ou Admin podem cadastrar livros."),
             @ApiResponse(responseCode = "409", description = "A chave já foi usada, mas o registro correspondente foi removido.")})
     @SecurityRequirement(name = "ApiKeyAuth")
     @PostMapping
@@ -115,7 +115,7 @@ public class LivroController {
     @Operation(summary = "Criar ou atualizar livro", description = "Use o UUID da rota para identificar o livro. No corpo, envie todos os campos obrigatórios e os UUIDs de autor e categoria já cadastrados, sem incluir o ID do livro. Se não existir, cria com esse UUID (201); se já existir, substitui os dados (200).")
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Livro existente atualizado."),
             @ApiResponse(responseCode = "201", description = "Novo livro criado no catálogo."),
-            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem atualizar livros."),
+            @ApiResponse(responseCode = "403", description = "Somente contas Premium ou Admin podem atualizar livros."),
             @ApiResponse(responseCode = "400", description = "Dados inválidos, JSON malformado/incompleto ou valor em formato incorreto.")})
     @SecurityRequirement(name = "ApiKeyAuth")
     @PutMapping("/{id}")
@@ -131,7 +131,7 @@ public class LivroController {
     @SecurityRequirement(name = "ApiKeyAuth")
     @ApiResponses({@ApiResponse(responseCode = "204", description = "Livro removido com sucesso."),
             @ApiResponse(responseCode = "401", description = "Chave X-API-Key ausente ou inválida.", content = @Content(schema = @Schema(implementation = ResponseError.class))),
-            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem remover livros.")})
+            @ApiResponse(responseCode = "403", description = "Somente contas Premium ou Admin podem remover livros.")})
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> removerLivro(@Parameter(description = "UUID do livro que será removido.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
         servicoLivros.excluir(id);

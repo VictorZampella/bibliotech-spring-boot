@@ -51,9 +51,8 @@ public class UsuarioController {
         this.montadorDePaginas = montadorDePaginas;
     }
 
-    @Operation(summary = "Listar leitores", description = "Retorna uma página dos leitores cadastrados. Use page (página iniciando em 0), size (itens por página) e sort para ordenar; por exemplo, sort=nome,asc.")
+    @Operation(summary = "Listar leitores", description = "Retorna uma página dos leitores cadastrados, incluindo seus dados de contato e endereço. Contas MEMBRO BASE, MEMBRO PREMIUM e ADMIN podem consultar a lista. Use page (página iniciando em 0), size (itens por página) e sort para ordenar; por exemplo, sort=nome,asc.")
     @SecurityRequirement(name = "ApiKeyAuth")
-    @ApiResponses(@ApiResponse(responseCode = "403", description = "Somente usuários Admin podem consultar leitores."))
     @GetMapping
     public ResponseEntity<PagedModel<EntityModel<Usuario>>> listarLeitores(
             @ParameterObject @PageableDefault(size = 10, sort = "nome") Pageable paginacao) {
@@ -62,9 +61,8 @@ public class UsuarioController {
         return ResponseEntity.ok(montadorDePaginas.toModel(leitores, montador, link));
     }
 
-    @Operation(summary = "Consultar leitor por UUID", description = "Busca o cadastro do leitor pelo identificador informado. Retorna 404 quando não houver leitor com esse UUID.")
+    @Operation(summary = "Consultar leitor por UUID", description = "Busca o cadastro do leitor pelo identificador informado. Contas MEMBRO BASE, MEMBRO PREMIUM e ADMIN podem consultar. Retorna 404 quando não houver leitor com esse UUID.")
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Cadastro do leitor encontrado."),
-            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem consultar leitores."),
             @ApiResponse(responseCode = "404", description = "Não existe leitor com esse UUID.")})
     @SecurityRequirement(name = "ApiKeyAuth")
     @GetMapping("/{id}")
@@ -93,7 +91,7 @@ public class UsuarioController {
     @Operation(summary = "Criar ou atualizar leitor", description = "Use o UUID da rota para identificar o leitor. No corpo, envie todos os campos obrigatórios do cadastro, sem incluir o ID. Se o leitor não existir, cria com esse UUID (201); se já existir, substitui os dados cadastrais (200).")
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Cadastro existente atualizado."),
             @ApiResponse(responseCode = "201", description = "Novo cadastro de leitor criado."),
-            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem atualizar leitores."),
+            @ApiResponse(responseCode = "403", description = "Somente contas Premium ou Admin podem atualizar leitores."),
             @ApiResponse(responseCode = "400", description = "Dados inválidos, JSON malformado/incompleto ou valor em formato incorreto.")})
     @SecurityRequirement(name = "ApiKeyAuth")
     @PutMapping("/{id}")
@@ -109,7 +107,7 @@ public class UsuarioController {
     @SecurityRequirement(name = "ApiKeyAuth")
     @ApiResponses({@ApiResponse(responseCode = "204", description = "Cadastro removido com sucesso."),
             @ApiResponse(responseCode = "401", description = "Chave X-API-Key ausente ou inválida.", content = @Content(schema = @Schema(implementation = ResponseError.class))),
-            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem remover leitores."),
+            @ApiResponse(responseCode = "403", description = "Somente contas Premium ou Admin podem remover leitores."),
             @ApiResponse(responseCode = "409", description = "O leitor informado não foi encontrado.")})
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> removerLeitor(@Parameter(description = "UUID do leitor que será removido.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {

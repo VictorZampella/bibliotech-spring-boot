@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-@Tag(name = "Autenticação", description = "Faça login para emitir uma chave X-API-Key. O papel da conta define quais operações administrativas ela pode executar; revogue a chave ao sair.")
+@Tag(name = "Autenticação", description = "Faça login para emitir uma chave X-API-Key. Membros BASE podem consultar; Membros PREMIUM e Admin podem administrar os recursos. Revogue a chave ao sair.")
 @ApiResponses({@ApiResponse(responseCode = "429", description = "Limite por IP (120 por minuto) ou pela chave (30 no BASE, 100 no PREMIUM) excedido; consulte Retry-After e os cabeçalhos de saldo.", headers = @Header(name = "Retry-After", description = "Quantidade de segundos que o cliente deve aguardar antes de tentar novamente.", schema = @Schema(type = "string", example = "60")), content = @Content(mediaType = "application/json", schema = @Schema(implementation = ResponseError.class)))})
 @RestController
 @RequestMapping("/api/auth")
@@ -30,7 +30,7 @@ public class AuthController {
         this.servicoChaves = servicoChaves;
     }
 
-    @Operation(summary = "Entrar e gerar chave de API", description = "Valida o e-mail e a senha e emite uma chave X-API-Key. A resposta também mostra o papel e o plano definidos pelo servidor. A chave é exibida somente nesta resposta: use-a no Authorize do Swagger para acessar as rotas autorizadas pelo papel da conta.")
+    @Operation(summary = "Entrar e gerar chave de API", description = "Valida o e-mail e a senha e emite uma chave X-API-Key. A resposta mostra o papel e o plano definidos pelo servidor. Membros BASE podem consultar livros, autores, categorias e leitores; Membros PREMIUM e Admin podem cadastrar, atualizar e remover. A chave é exibida somente nesta resposta: use-a no Authorize do Swagger.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Autenticação realizada; chave de API emitida."),
             @ApiResponse(responseCode = "400", description = "Corpo JSON ausente, inválido ou com e-mail/senha em formato incorreto.", content = @Content(schema = @Schema(implementation = ResponseError.class))),

@@ -51,9 +51,8 @@ public class CategoriaController {
         this.montadorDePaginas = montadorDePaginas;
     }
 
-    @Operation(summary = "Listar categorias", description = "Retorna uma página das categorias cadastradas. Use page (página iniciando em 0), size (itens por página) e sort para ordenar; por exemplo, sort=nome,asc.")
+    @Operation(summary = "Listar categorias", description = "Retorna uma página das categorias cadastradas. Contas MEMBRO BASE, MEMBRO PREMIUM e ADMIN podem consultar a lista. Use page (página iniciando em 0), size (itens por página) e sort para ordenar; por exemplo, sort=nome,asc.")
     @SecurityRequirement(name = "ApiKeyAuth")
-    @ApiResponses(@ApiResponse(responseCode = "403", description = "Somente usuários Admin podem consultar categorias."))
     @GetMapping
     public ResponseEntity<PagedModel<EntityModel<Categoria>>> listarCategorias(
             @ParameterObject @PageableDefault(size = 10, sort = "nome") Pageable paginacao) {
@@ -62,9 +61,8 @@ public class CategoriaController {
         return ResponseEntity.ok(montadorDePaginas.toModel(categorias, montador, link));
     }
 
-    @Operation(summary = "Consultar categoria por UUID", description = "Busca a categoria pelo identificador informado. Retorna 404 quando não houver cadastro com esse UUID.")
+    @Operation(summary = "Consultar categoria por UUID", description = "Busca a categoria pelo identificador informado. Contas MEMBRO BASE, MEMBRO PREMIUM e ADMIN podem consultar. Retorna 404 quando não houver cadastro com esse UUID.")
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Categoria encontrada."),
-            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem consultar categorias."),
             @ApiResponse(responseCode = "404", description = "Não existe categoria com esse UUID.")})
     @SecurityRequirement(name = "ApiKeyAuth")
     @GetMapping("/{id}")
@@ -76,7 +74,7 @@ public class CategoriaController {
     @Operation(summary = "Cadastrar categoria", description = "Cria uma categoria ou gênero literário. Informe um nome obrigatório e exclusivo; o ID é gerado pela API.")
     @ApiResponses({@ApiResponse(responseCode = "201", description = "Categoria cadastrada com sucesso."),
             @ApiResponse(responseCode = "400", description = "Dados inválidos, JSON malformado/incompleto ou valor em formato incorreto."),
-            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem cadastrar categorias."),
+            @ApiResponse(responseCode = "403", description = "Somente contas Premium ou Admin podem cadastrar categorias."),
             @ApiResponse(responseCode = "409", description = "A chave já foi usada, mas o registro correspondente foi removido.")})
     @SecurityRequirement(name = "ApiKeyAuth")
     @PostMapping
@@ -95,7 +93,7 @@ public class CategoriaController {
     @Operation(summary = "Criar ou atualizar categoria", description = "Use o UUID da rota para identificar a categoria e informe o nome no corpo, sem incluir o ID. Se a categoria não existir, cria com esse UUID (201); se já existir, atualiza o nome (200).")
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Categoria existente atualizada."),
             @ApiResponse(responseCode = "201", description = "Nova categoria criada."),
-            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem atualizar categorias."),
+            @ApiResponse(responseCode = "403", description = "Somente contas Premium ou Admin podem atualizar categorias."),
             @ApiResponse(responseCode = "400", description = "Dados inválidos, JSON malformado/incompleto ou valor em formato incorreto.")})
     @SecurityRequirement(name = "ApiKeyAuth")
     @PutMapping("/{id}")
@@ -111,7 +109,7 @@ public class CategoriaController {
     @SecurityRequirement(name = "ApiKeyAuth")
     @ApiResponses({@ApiResponse(responseCode = "204", description = "Categoria removida com sucesso."),
             @ApiResponse(responseCode = "401", description = "Chave X-API-Key ausente ou inválida.", content = @Content(schema = @Schema(implementation = ResponseError.class))),
-            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem remover categorias.")})
+            @ApiResponse(responseCode = "403", description = "Somente contas Premium ou Admin podem remover categorias.")})
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> removerCategoria(@Parameter(description = "UUID da categoria que será removida.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
         servicoCategorias.excluir(id);

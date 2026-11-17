@@ -66,13 +66,13 @@ public class Usuario {
     @Enumerated(EnumType.STRING)
     @Column(name = "papel", nullable = false, length = 20)
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    @Schema(description = "Papel de acesso definido pelo servidor. Admin pode administrar os recursos; Membro pode consultar livros.", accessMode = Schema.AccessMode.READ_ONLY, example = "MEMBRO")
+    @Schema(description = "Papel de acesso definido pelo servidor. O plano BASE ou PREMIUM determina as permissões do Membro; Admin pode administrar todos os recursos.", accessMode = Schema.AccessMode.READ_ONLY, example = "MEMBRO")
     private PapelAcesso papel = PapelAcesso.MEMBRO;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "plano", nullable = false, length = 20)
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    @Schema(description = "Plano de uso definido pelo servidor: BASE permite 30 requisições por minuto e PREMIUM permite 100.", accessMode = Schema.AccessMode.READ_ONLY, example = "BASE")
+    @Schema(description = "Plano definido pelo servidor. Para Membros, BASE permite somente consultas e 30 requisições por minuto; PREMIUM permite administrar os recursos e 100 requisições por minuto.", accessMode = Schema.AccessMode.READ_ONLY, example = "BASE")
     private PlanoUtilizacao plano = PlanoUtilizacao.BASE;
 
     @PrePersist
