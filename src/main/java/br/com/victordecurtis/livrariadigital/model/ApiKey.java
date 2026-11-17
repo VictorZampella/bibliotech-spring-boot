@@ -45,6 +45,10 @@ public class ApiKey {
         return keyHash;
     }
 
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
     public Instant getRevokedAt() {
         return revokedAt;
     }

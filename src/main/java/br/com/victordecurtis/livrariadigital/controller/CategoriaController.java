@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,7 +34,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Tag(name = "Categorias e gêneros", description = "Operações para organizar o catálogo por assuntos e gêneros literários.")
-@ApiResponses({@ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde o tempo informado em Retry-After.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ResponseError.class), examples = @ExampleObject(value = "{\"status\":\"error\",\"statusCode\":429,\"error\":\"Too Many Requests\",\"errors\":[\"Limite de 20 requisições por minuto excedido. Aguarde o tempo indicado no cabeçalho Retry-After e tente novamente.\"]}")))})
+@ApiResponses({@ApiResponse(responseCode = "429", description = "Limite por IP (120 por minuto) ou pela chave (30 no BASE, 100 no PREMIUM) excedido; consulte Retry-After e os cabeçalhos de saldo.", headers = @Header(name = "Retry-After", description = "Quantidade de segundos que o cliente deve aguardar antes de tentar novamente.", schema = @Schema(type = "string", example = "60")), content = @Content(mediaType = "application/json", schema = @Schema(implementation = ResponseError.class), examples = @ExampleObject(value = "{\"status\":\"error\",\"statusCode\":429,\"error\":\"Too Many Requests\",\"errors\":[\"Limite por IP (120 por minuto) ou pela chave (30 no BASE, 100 no PREMIUM) excedido. Consulte Retry-After e os cabeçalhos de saldo antes de tentar novamente.\"]}")))})
 @RestController
 @RequestMapping("/api/categorias")
 public class CategoriaController {
@@ -51,6 +52,8 @@ public class CategoriaController {
     }
 
     @Operation(summary = "Listar categorias", description = "Retorna uma página das categorias cadastradas. Use page (página iniciando em 0), size (itens por página) e sort para ordenar; por exemplo, sort=nome,asc.")
+    @SecurityRequirement(name = "ApiKeyAuth")
+    @ApiResponses(@ApiResponse(responseCode = "403", description = "Somente usuários Admin podem consultar categorias."))
     @GetMapping
     public ResponseEntity<PagedModel<EntityModel<Categoria>>> listarCategorias(
             @ParameterObject @PageableDefault(size = 10, sort = "nome") Pageable paginacao) {
@@ -61,7 +64,9 @@ public class CategoriaController {
 
     @Operation(summary = "Consultar categoria por UUID", description = "Busca a categoria pelo identificador informado. Retorna 404 quando não houver cadastro com esse UUID.")
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Categoria encontrada."),
+            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem consultar categorias."),
             @ApiResponse(responseCode = "404", description = "Não existe categoria com esse UUID.")})
+    @SecurityRequirement(name = "ApiKeyAuth")
     @GetMapping("/{id}")
     public ResponseEntity<EntityModel<Categoria>> consultarCategoria(@Parameter(description = "UUID da categoria que será consultada.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
         Categoria categoria = servicoCategorias.buscarPorId(id);
@@ -71,7 +76,9 @@ public class CategoriaController {
     @Operation(summary = "Cadastrar categoria", description = "Cria uma categoria ou gênero literário. Informe um nome obrigatório e exclusivo; o ID é gerado pela API.")
     @ApiResponses({@ApiResponse(responseCode = "201", description = "Categoria cadastrada com sucesso."),
             @ApiResponse(responseCode = "400", description = "Os dados enviados não passaram pela validação."),
+            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem cadastrar categorias."),
             @ApiResponse(responseCode = "409", description = "A chave já foi usada, mas o registro correspondente foi removido.")})
+    @SecurityRequirement(name = "ApiKeyAuth")
     @PostMapping
     public ResponseEntity<EntityModel<Categoria>> cadastrarCategoria(
             @Parameter(description = "Chave única gerada pelo cliente para esta tentativa. Reutilize a mesma chave somente ao repetir a mesma criação.", example = "categoria-2026-001")
@@ -88,7 +95,9 @@ public class CategoriaController {
     @Operation(summary = "Criar ou atualizar categoria", description = "Use o UUID da rota para identificar a categoria e informe o nome no corpo, sem incluir o ID. Se a categoria não existir, cria com esse UUID (201); se já existir, atualiza o nome (200).")
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Categoria existente atualizada."),
             @ApiResponse(responseCode = "201", description = "Nova categoria criada."),
+            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem atualizar categorias."),
             @ApiResponse(responseCode = "400", description = "Os dados enviados não passaram pela validação.")})
+    @SecurityRequirement(name = "ApiKeyAuth")
     @PutMapping("/{id}")
     public ResponseEntity<EntityModel<Categoria>> criarOuAtualizarCategoria(@Parameter(description = "UUID que identifica a categoria. Se ainda não existir, será usado para criá-la.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id, @Valid @RequestBody Categoria categoria) {
         UpsertResult<Categoria> resultado = servicoCategorias.atualizarOuCriar(id, categoria);
@@ -101,7 +110,8 @@ public class CategoriaController {
     @Operation(summary = "Remover categoria", description = "Exclui do catálogo a categoria identificada pelo UUID. Em sucesso, responde 204 sem corpo.")
     @SecurityRequirement(name = "ApiKeyAuth")
     @ApiResponses({@ApiResponse(responseCode = "204", description = "Categoria removida com sucesso."),
-            @ApiResponse(responseCode = "401", description = "Chave X-API-Key ausente ou inválida.", content = @Content(schema = @Schema(implementation = ResponseError.class)))})
+            @ApiResponse(responseCode = "401", description = "Chave X-API-Key ausente ou inválida.", content = @Content(schema = @Schema(implementation = ResponseError.class))),
+            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem remover categorias.")})
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> removerCategoria(@Parameter(description = "UUID da categoria que será removida.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
         servicoCategorias.excluir(id);

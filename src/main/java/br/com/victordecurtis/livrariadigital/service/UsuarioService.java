@@ -21,17 +21,20 @@ public class UsuarioService {
     private final ViaCepService servicoViaCep;
     private final PasswordEncoder codificadorSenha;
     private final ApiKeyRepository repositorioChaves;
+    private final AcessoConfiguradoService servicoAcessoConfigurado;
 
     public UsuarioService(UsuarioRepository repositorioLeitores,
                           EnderecoRepository repositorioEnderecos,
                           ViaCepService servicoViaCep,
                           PasswordEncoder codificadorSenha,
-                          ApiKeyRepository repositorioChaves) {
+                          ApiKeyRepository repositorioChaves,
+                          AcessoConfiguradoService servicoAcessoConfigurado) {
         this.repositorioLeitores = repositorioLeitores;
         this.repositorioEnderecos = repositorioEnderecos;
         this.servicoViaCep = servicoViaCep;
         this.codificadorSenha = codificadorSenha;
         this.repositorioChaves = repositorioChaves;
+        this.servicoAcessoConfigurado = servicoAcessoConfigurado;
     }
 
     public Page<Usuario> buscarTodos(Pageable paginacao) {
@@ -46,6 +49,7 @@ public class UsuarioService {
         if (usuario.getId() == null) {
             usuario.setId(UUID.randomUUID());
         }
+        servicoAcessoConfigurado.aplicarConfiguracao(usuario);
         codificarSenha(usuario);
         salvarComCep(usuario);
         return usuario;
@@ -77,6 +81,7 @@ public class UsuarioService {
             usuario.setEndereco(dados.getEndereco());
         }
 
+        servicoAcessoConfigurado.aplicarConfiguracao(usuario);
         codificarSenha(usuario);
         salvarComCep(usuario);
         return new UpsertResult<>(usuario, criado);

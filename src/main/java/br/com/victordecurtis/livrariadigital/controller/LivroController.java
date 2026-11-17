@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,7 +36,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Tag(name = "Catálogo de livros", description = "Operações de pesquisa, cadastro, consulta, atualização e remoção de livros.")
-@ApiResponses({@ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde o tempo informado em Retry-After.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ResponseError.class), examples = @ExampleObject(value = "{\"status\":\"error\",\"statusCode\":429,\"error\":\"Too Many Requests\",\"errors\":[\"Limite de 20 requisições por minuto excedido. Aguarde o tempo indicado no cabeçalho Retry-After e tente novamente.\"]}")))})
+@ApiResponses({@ApiResponse(responseCode = "429", description = "Limite por IP (120 por minuto) ou pela chave (30 no BASE, 100 no PREMIUM) excedido; consulte Retry-After e os cabeçalhos de saldo.", headers = @Header(name = "Retry-After", description = "Quantidade de segundos que o cliente deve aguardar antes de tentar novamente.", schema = @Schema(type = "string", example = "60")), content = @Content(mediaType = "application/json", schema = @Schema(implementation = ResponseError.class), examples = @ExampleObject(value = "{\"status\":\"error\",\"statusCode\":429,\"error\":\"Too Many Requests\",\"errors\":[\"Limite por IP (120 por minuto) ou pela chave (30 no BASE, 100 no PREMIUM) excedido. Consulte Retry-After e os cabeçalhos de saldo antes de tentar novamente.\"]}")))})
 @RestController
 @RequestMapping("/api/livros")
 public class LivroController {
@@ -95,7 +96,9 @@ public class LivroController {
     @Operation(summary = "Cadastrar livro", description = "Cria uma obra no catálogo. Informe os dados editoriais e os UUIDs de um autor e de uma categoria já cadastrados; o ID do livro é gerado pela API.")
     @ApiResponses({@ApiResponse(responseCode = "201", description = "Livro cadastrado com sucesso."),
             @ApiResponse(responseCode = "400", description = "Os dados enviados não passaram pela validação."),
+            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem cadastrar livros."),
             @ApiResponse(responseCode = "409", description = "A chave já foi usada, mas o registro correspondente foi removido.")})
+    @SecurityRequirement(name = "ApiKeyAuth")
     @PostMapping
     public ResponseEntity<EntityModel<Livro>> cadastrarLivro(
             @Parameter(description = "Chave única gerada pelo cliente para esta tentativa. Reutilize a mesma chave somente ao repetir a mesma criação.", example = "livro-2026-001")
@@ -112,7 +115,9 @@ public class LivroController {
     @Operation(summary = "Criar ou atualizar livro", description = "Use o UUID da rota para identificar o livro. No corpo, envie todos os campos obrigatórios e os UUIDs de autor e categoria já cadastrados, sem incluir o ID do livro. Se não existir, cria com esse UUID (201); se já existir, substitui os dados (200).")
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Livro existente atualizado."),
             @ApiResponse(responseCode = "201", description = "Novo livro criado no catálogo."),
+            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem atualizar livros."),
             @ApiResponse(responseCode = "400", description = "Os dados enviados não passaram pela validação.")})
+    @SecurityRequirement(name = "ApiKeyAuth")
     @PutMapping("/{id}")
     public ResponseEntity<EntityModel<Livro>> criarOuAtualizarLivro(@Parameter(description = "UUID que identifica o livro. Se ainda não existir, será usado para criá-lo.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id, @Valid @RequestBody Livro livro) {
         UpsertResult<Livro> resultado = servicoLivros.atualizarOuCriar(id, livro);
@@ -125,7 +130,8 @@ public class LivroController {
     @Operation(summary = "Remover livro", description = "Exclui do catálogo o livro identificado pelo UUID. Em sucesso, responde 204 sem corpo.")
     @SecurityRequirement(name = "ApiKeyAuth")
     @ApiResponses({@ApiResponse(responseCode = "204", description = "Livro removido com sucesso."),
-            @ApiResponse(responseCode = "401", description = "Chave X-API-Key ausente ou inválida.", content = @Content(schema = @Schema(implementation = ResponseError.class)))})
+            @ApiResponse(responseCode = "401", description = "Chave X-API-Key ausente ou inválida.", content = @Content(schema = @Schema(implementation = ResponseError.class))),
+            @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem remover livros.")})
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> removerLivro(@Parameter(description = "UUID do livro que será removido.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id) {
         servicoLivros.excluir(id);

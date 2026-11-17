@@ -28,6 +28,8 @@ public record LivroVersao2Response(
         BigDecimal preco,
         @Schema(description = "Quantidade de páginas.", example = "688")
         Integer quantidadePaginas,
+        @Schema(description = "Quantidade de exemplares disponíveis; zero ou maior.", example = "5", minimum = "0")
+        Integer quantidadeExemplares,
         @Schema(description = "Data de publicação no formato AAAA-MM-DD.", example = "1965-08-01")
         LocalDate anoPublicacao) {
 
@@ -42,6 +44,7 @@ public record LivroVersao2Response(
                 livro.getUrlCapa(),
                 livro.getPreco(),
                 livro.getQuantidadePaginas(),
+                livro.getQuantidadeExemplares(),
                 livro.getAnoPublicacao().toInstant().atZone(ZoneOffset.UTC).toLocalDate());
     }
 }

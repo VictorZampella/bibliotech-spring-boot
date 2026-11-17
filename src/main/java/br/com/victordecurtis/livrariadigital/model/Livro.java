@@ -75,12 +75,23 @@ public class Livro {
     @Schema(description = "Quantidade total de páginas. Aceita valores inteiros de 1 a 10000.", example = "688", minimum = "1", maximum = "10000")
     private Integer quantidadePaginas;
 
+    @Column(name = "quantidade_exemplares", nullable = false, columnDefinition = "integer default 0")
+    @Min(value = 0, message = "A quantidade de exemplares não pode ser negativa")
+    @Schema(description = "Exemplares disponíveis no acervo. Aceita zero ou um número inteiro positivo; se omitido, assume zero.", example = "5", minimum = "0")
+    private Integer quantidadeExemplares;
+
     @Column(nullable = false)
     @NotNull(message = "O ano de publicação do livro é obrigatório")
     @PastOrPresent(message = "A data de publicação não pode ser futura")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Schema(description = "Data de publicação no formato AAAA-MM-DD. Não pode ser futura.", example = "1965-01-01", format = "date")
     private Date anoPublicacao;
+
+    @PrePersist
+    @PreUpdate
+    private void aplicarQuantidadePadrao() {
+        if (quantidadeExemplares == null) quantidadeExemplares = 0;
+    }
 }
 
 

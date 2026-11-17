@@ -4,6 +4,8 @@ import br.com.victordecurtis.livrariadigital.model.Autor;
 import br.com.victordecurtis.livrariadigital.model.Categoria;
 import br.com.victordecurtis.livrariadigital.model.Endereco;
 import br.com.victordecurtis.livrariadigital.model.Livro;
+import br.com.victordecurtis.livrariadigital.model.PapelAcesso;
+import br.com.victordecurtis.livrariadigital.model.PlanoUtilizacao;
 import br.com.victordecurtis.livrariadigital.model.Usuario;
 import br.com.victordecurtis.livrariadigital.repository.AutorRepository;
 import br.com.victordecurtis.livrariadigital.repository.CategoriaRepository;
@@ -74,7 +76,10 @@ public class DadosDemonstracaoInitializer implements CommandLineRunner {
     }
 
     private void criarLeitor(String nome, String email, String telefone, String nascimento, Endereco endereco) {
-        if (repositorioLeitores.findByEmailIgnoreCase(email).isPresent()) {
+        Usuario existente = repositorioLeitores.findByEmailIgnoreCase(email).orElse(null);
+        if (existente != null) {
+            aplicarPapelDemonstracao(existente, email);
+            repositorioLeitores.save(existente);
             return;
         }
 
@@ -86,7 +91,13 @@ public class DadosDemonstracaoInitializer implements CommandLineRunner {
         usuario.setSenha(codificadorSenha.encode(SENHA_DEMONSTRACAO));
         usuario.setDataNascimento(converterData(nascimento));
         usuario.setEndereco(endereco);
+        aplicarPapelDemonstracao(usuario, email);
         repositorioLeitores.save(usuario);
+    }
+
+    private void aplicarPapelDemonstracao(Usuario usuario, String email) {
+        usuario.setPapel(email.contains("demo1") ? PapelAcesso.ADMIN : PapelAcesso.MEMBRO);
+        usuario.setPlano(email.contains("demo3") ? PlanoUtilizacao.PREMIUM : PlanoUtilizacao.BASE);
     }
 
     private void criarLivrosDeDemonstracao() {
@@ -140,6 +151,7 @@ public class DadosDemonstracaoInitializer implements CommandLineRunner {
         livro.setPreco(new BigDecimal(preco));
         livro.setCategoria(categoria);
         livro.setQuantidadePaginas(paginas);
+        livro.setQuantidadeExemplares(5);
         livro.setAnoPublicacao(converterData(publicacao));
         repositorioLivros.save(livro);
     }

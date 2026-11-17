@@ -62,6 +62,24 @@ public class Usuario {
     @Valid
     @Schema(description = "Endereço do leitor. Envie somente o CEP com 8 números; a API consulta o ViaCEP e completa os demais campos.")
     private Endereco endereco;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "papel", nullable = false, length = 20)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Schema(description = "Papel de acesso definido pelo servidor. Admin pode administrar os recursos; Membro pode consultar livros.", accessMode = Schema.AccessMode.READ_ONLY, example = "MEMBRO")
+    private PapelAcesso papel = PapelAcesso.MEMBRO;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "plano", nullable = false, length = 20)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Schema(description = "Plano de uso definido pelo servidor: BASE permite 30 requisições por minuto e PREMIUM permite 100.", accessMode = Schema.AccessMode.READ_ONLY, example = "BASE")
+    private PlanoUtilizacao plano = PlanoUtilizacao.BASE;
+
+    @PrePersist
+    private void aplicarAcessoPadrao() {
+        if (papel == null) papel = PapelAcesso.MEMBRO;
+        if (plano == null) plano = PlanoUtilizacao.BASE;
+    }
 }
 
 

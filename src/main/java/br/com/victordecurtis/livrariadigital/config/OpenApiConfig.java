@@ -39,18 +39,28 @@ import java.util.Map;
 
                         A consulta **GET `/api/livros/{id}`** aceita o cabeçalho `X-API-Version`. Sem esse cabeçalho, a API usa a versão **1**, que mantém autor e categoria como objetos completos. Com `X-API-Version: 2`, retorna uma representação resumida com `autorNome` e `categoriaNome`. As duas versões consultam o mesmo livro; muda apenas o formato da resposta.
 
-                        ### Como autorizar operações de remoção
+                        ### Como acessar operações administrativas
 
-                        1. Cadastre um leitor em **POST `/api/usuarios`**, caso ainda não tenha um.
-                        2. Faça login em **POST `/api/auth/login`** com o e-mail e a senha desse leitor. Copie o valor de `apiKey` retornado; ele é exibido somente no login.
-                        3. Clique no botão **Authorize** no topo da página, cole a chave no campo `X-API-Key` e confirme em **Authorize**.
-                        4. Abra a operação **DELETE** desejada e clique em **Try it out**. O Swagger enviará a chave automaticamente; informe o UUID do cadastro e execute.
+                        1. Cadastre um leitor em **POST `/api/usuarios`** ou use uma conta existente.
+                        2. Faça login em **POST `/api/auth/login`**. A resposta informa o papel da conta e mostra a chave `apiKey` uma única vez.
+                        3. Para operações administrativas, a conta precisa ser **ADMIN**. No ambiente local, use o leitor de demonstração `leitor.demo1@example.com` com a senha `BiblioDemo123`. No Render, cadastre um leitor, copie o `usuarioId` retornado e configure esse UUID em `BIBLIOTECH_ADMIN_USER_IDS`; depois faça login novamente.
+                        4. Clique em **Authorize** no topo da página, cole a chave no campo `X-API-Key` e confirme. Use então as rotas permitidas para o papel da conta.
 
-                        Os cadeados ao lado das operações **DELETE** apenas indicam que elas exigem essa chave: não é necessário preencher uma chave em cada cadeado. Todos usam a chave informada no botão **Authorize** do topo. O Swagger pode exibir **Authorized** assim que o texto é salvo, mas isso não confirma que a chave é válida; a API só verifica a chave quando você executa uma operação protegida. Uma chave inválida resulta em **401 (Não autorizado)** e a remoção não acontece.
+                        O cadeado indica que a operação exige uma chave válida e um papel autorizado; basta informar a chave uma vez no botão **Authorize**. O Swagger pode exibir **Authorized** assim que o texto é salvo, mas isso não confirma que a chave é válida. Na execução, uma chave ausente ou inválida resulta em **401 (Não autorizado)**; uma chave válida de **MEMBRO** em uma rota administrativa resulta em **403 (Acesso proibido)**.
 
                         Para encerrar o acesso, execute **POST `/api/auth/logout`** com a chave atual. Depois do logout, faça login novamente para obter outra chave.
 
-                        Cada endereço IP pode fazer até **20 requisições por minuto**. Ao ultrapassar esse limite, a API responde com o código **429 (Muitas requisições)**. Aguarde o tempo informado no cabeçalho `Retry-After` antes de tentar novamente.
+                        ### Papéis, planos e limites
+
+                        Todo novo leitor recebe o papel **MEMBRO** e o plano **BASE**. Membros podem consultar livros; somente usuários **ADMIN** podem cadastrar, atualizar, remover ou acessar os demais recursos administrativos. O servidor valida o papel em cada requisição; enviar `papel` ou `plano` no corpo não altera essas permissões.
+
+                        Os papéis e planos são independentes. O plano **BASE** permite 30 requisições por minuto por chave; o **PREMIUM**, 100. Além disso, cada IP tem limite de 120 requisições por minuto. Ao exceder qualquer limite, a API responde **429** com `Retry-After`; os cabeçalhos `X-Rate-Limit-IP-*` e `X-Rate-Limit-Key-*` mostram o limite e o saldo de cada controle.
+
+                        Para promover uma conta com segurança, configure o UUID retornado no login em `BIBLIOTECH_ADMIN_USER_IDS` no ambiente do servidor. Para conceder o plano Premium, use `BIBLIOTECH_PREMIUM_USER_IDS`. Aceitam-se vários UUIDs separados por vírgula. O cliente não pode alterar esses valores no corpo de cadastro.
+
+                        Livros aceitam `quantidadeExemplares` igual a zero ou maior; valores negativos retornam **400 (Requisição inválida)**. O campo é opcional para manter compatibilidade com cadastros antigos e assume zero quando omitido.
+
+                        O controle de limite usa memória do processo: ele reinicia junto com a aplicação e não compartilha contagens entre múltiplas instâncias. Para uma demonstração em uma instância, isso mantém a configuração simples; ambientes com escala horizontal precisam de armazenamento compartilhado.
                         """,
                 contact = @Contact(
                         name = "Victor de Curtis",
@@ -64,7 +74,7 @@ import java.util.Map;
                 url = "/"
         ))
 @SecurityScheme(name = "ApiKeyAuth", type = SecuritySchemeType.APIKEY,
-        in = SecuritySchemeIn.HEADER, paramName = "X-API-Key", description = "Cole aqui a apiKey retornada por POST /api/auth/login. O botão Authorize do topo salva a chave para todas as operações DELETE; os cadeados indicam quais rotas a exigem. A indicação Authorized do Swagger significa apenas que o texto foi salvo: a API valida a chave ao executar a operação protegida.")
+        in = SecuritySchemeIn.HEADER, paramName = "X-API-Key", description = "Cole aqui a apiKey retornada por POST /api/auth/login. As rotas administrativas exigem uma chave de usuário ADMIN; usuários MEMBRO podem consultar somente livros. O Swagger salva a chave, mas a API valida o papel em cada requisição.")
 public class OpenApiConfig {
 
     @Bean

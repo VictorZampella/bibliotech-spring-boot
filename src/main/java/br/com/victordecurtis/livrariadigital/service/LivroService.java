@@ -38,7 +38,8 @@ public class LivroService {
                         livro.getCategoria().getNome().toLowerCase().contains(busca.toLowerCase()) ||
                         livro.getAnoPublicacao().toString().contains(busca) ||
                         livro.getPreco().toString().contains(busca) ||
-                        livro.getQuantidadePaginas().toString().contains(busca))
+                        livro.getQuantidadePaginas().toString().contains(busca) ||
+                        String.valueOf(livro.getQuantidadeExemplares()).contains(busca))
                 .collect(Collectors.toList());
 
         Comparator<Livro> ordenacao = null;
@@ -60,6 +61,7 @@ public class LivroService {
             case "preco" -> Comparator.comparing(Livro::getPreco);
             case "anoPublicacao" -> Comparator.comparing(Livro::getAnoPublicacao);
             case "quantidadePaginas" -> Comparator.comparing(Livro::getQuantidadePaginas);
+            case "quantidadeExemplares" -> Comparator.comparing(Livro::getQuantidadeExemplares);
             case "autor.nome" -> Comparator.comparing(livro -> livro.getAutor().getNome(), String.CASE_INSENSITIVE_ORDER);
             case "categoria.nome" -> Comparator.comparing(livro -> livro.getCategoria().getNome(), String.CASE_INSENSITIVE_ORDER);
             case "descricaoCurta" -> Comparator.comparing(Livro::getDescricaoCurta, String.CASE_INSENSITIVE_ORDER);
@@ -69,6 +71,7 @@ public class LivroService {
     }
 
     public Livro salvar(Livro livro) {
+        if (livro.getQuantidadeExemplares() == null) livro.setQuantidadeExemplares(0);
         if (livro.getId() == null) {
             livro.setId(UUID.randomUUID());
         }
@@ -94,9 +97,12 @@ public class LivroService {
             livro.setPreco(dados.getPreco());
             livro.setAnoPublicacao(dados.getAnoPublicacao());
             livro.setQuantidadePaginas(dados.getQuantidadePaginas());
+            livro.setQuantidadeExemplares(dados.getQuantidadeExemplares() == null ? 0 : dados.getQuantidadeExemplares());
             livro.setCategoria(dados.getCategoria());
             livro.setAutor(dados.getAutor());
         }
+
+        if (livro.getQuantidadeExemplares() == null) livro.setQuantidadeExemplares(0);
 
         return new UpsertResult<>(repositorioLivros.save(livro), criado);
     }

@@ -2,6 +2,8 @@ package br.com.victordecurtis.livrariadigital.service;
 
 import br.com.victordecurtis.livrariadigital.handler.UnauthorizedException;
 import br.com.victordecurtis.livrariadigital.model.ApiKey;
+import br.com.victordecurtis.livrariadigital.model.PapelAcesso;
+import br.com.victordecurtis.livrariadigital.model.PlanoUtilizacao;
 import br.com.victordecurtis.livrariadigital.model.Usuario;
 import br.com.victordecurtis.livrariadigital.repository.ApiKeyRepository;
 import br.com.victordecurtis.livrariadigital.repository.UsuarioRepository;
@@ -16,21 +18,26 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.UUID;
+import java.util.Optional;
 
 @Service
 public class ApiKeyService {
+    public static final String ATRIBUTO_ACESSO = ApiKeyService.class.getName() + ".acesso";
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UsuarioRepository repositorioLeitores;
     private final ApiKeyRepository repositorioChaves;
     private final PasswordEncoder codificadorSenha;
+    private final AcessoConfiguradoService servicoAcessoConfigurado;
 
     public ApiKeyService(UsuarioRepository repositorioLeitores,
                          ApiKeyRepository repositorioChaves,
-                         PasswordEncoder codificadorSenha) {
+                         PasswordEncoder codificadorSenha,
+                         AcessoConfiguradoService servicoAcessoConfigurado) {
         this.repositorioLeitores = repositorioLeitores;
         this.repositorioChaves = repositorioChaves;
         this.codificadorSenha = codificadorSenha;
+        this.servicoAcessoConfigurado = servicoAcessoConfigurado;
     }
 
     @Transactional
@@ -41,17 +48,28 @@ public class ApiKeyService {
             throw new UnauthorizedException("E-mail ou senha inválidos.");
         }
 
+        if (servicoAcessoConfigurado.aplicarConfiguracao(usuario)) {
+            repositorioLeitores.save(usuario);
+        }
+
         byte[] bytesAleatorios = new byte[32];
         SECURE_RANDOM.nextBytes(bytesAleatorios);
         String chave = "biblio_" + Base64.getUrlEncoder().withoutPadding().encodeToString(bytesAleatorios);
         repositorioChaves.save(new ApiKey(hashSha256(chave), usuario));
-        return new ChaveEmitida(chave, usuario.getId(), usuario.getNome());
+        return new ChaveEmitida(chave, usuario.getId(), usuario.getNome(), usuario.getPapel(), usuario.getPlano());
     }
 
     @Transactional(readOnly = true)
     public boolean chaveValida(String chave) {
-        return chave != null && !chave.isBlank()
-                && repositorioChaves.findByKeyHashAndRevokedAtIsNull(hashSha256(chave)).isPresent();
+        return obterAcesso(chave).isPresent();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Acesso> obterAcesso(String chave) {
+        if (chave == null || chave.isBlank()) return Optional.empty();
+        return repositorioChaves.findByKeyHashAndRevokedAtIsNull(hashSha256(chave))
+                .map(registro -> new Acesso(registro.getKeyHash(), registro.getUsuario().getId(),
+                        registro.getUsuario().getPapel(), registro.getUsuario().getPlano()));
     }
 
     @Transactional
@@ -96,6 +114,9 @@ public class ApiKeyService {
         }
     }
 
-    public record ChaveEmitida(String valor, UUID usuarioId, String nome) {
+    public record ChaveEmitida(String valor, UUID usuarioId, String nome, PapelAcesso papel, PlanoUtilizacao plano) {
+    }
+
+    public record Acesso(String identificadorChave, UUID usuarioId, PapelAcesso papel, PlanoUtilizacao plano) {
     }
 }
