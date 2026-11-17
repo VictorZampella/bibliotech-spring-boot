@@ -33,6 +33,7 @@ public class AuthController {
     @Operation(summary = "Entrar e gerar chave de API", description = "Valida o e-mail e a senha e emite uma chave X-API-Key. A resposta também mostra o papel e o plano definidos pelo servidor. A chave é exibida somente nesta resposta: use-a no Authorize do Swagger para acessar as rotas autorizadas pelo papel da conta.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Autenticação realizada; chave de API emitida."),
+            @ApiResponse(responseCode = "400", description = "Corpo JSON ausente, inválido ou com e-mail/senha em formato incorreto.", content = @Content(schema = @Schema(implementation = ResponseError.class))),
             @ApiResponse(responseCode = "401", description = "E-mail ou senha inválidos.", content = @Content(schema = @Schema(implementation = ResponseError.class)))
     })
     @PostMapping("/login")

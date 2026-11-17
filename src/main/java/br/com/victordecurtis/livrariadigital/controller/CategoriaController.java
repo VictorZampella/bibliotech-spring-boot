@@ -75,7 +75,7 @@ public class CategoriaController {
 
     @Operation(summary = "Cadastrar categoria", description = "Cria uma categoria ou gênero literário. Informe um nome obrigatório e exclusivo; o ID é gerado pela API.")
     @ApiResponses({@ApiResponse(responseCode = "201", description = "Categoria cadastrada com sucesso."),
-            @ApiResponse(responseCode = "400", description = "Os dados enviados não passaram pela validação."),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos, JSON malformado/incompleto ou valor em formato incorreto."),
             @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem cadastrar categorias."),
             @ApiResponse(responseCode = "409", description = "A chave já foi usada, mas o registro correspondente foi removido.")})
     @SecurityRequirement(name = "ApiKeyAuth")
@@ -96,7 +96,7 @@ public class CategoriaController {
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Categoria existente atualizada."),
             @ApiResponse(responseCode = "201", description = "Nova categoria criada."),
             @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem atualizar categorias."),
-            @ApiResponse(responseCode = "400", description = "Os dados enviados não passaram pela validação.")})
+            @ApiResponse(responseCode = "400", description = "Dados inválidos, JSON malformado/incompleto ou valor em formato incorreto.")})
     @SecurityRequirement(name = "ApiKeyAuth")
     @PutMapping("/{id}")
     public ResponseEntity<EntityModel<Categoria>> criarOuAtualizarCategoria(@Parameter(description = "UUID que identifica a categoria. Se ainda não existir, será usado para criá-la.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id, @Valid @RequestBody Categoria categoria) {

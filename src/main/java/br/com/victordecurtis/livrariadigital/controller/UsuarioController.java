@@ -75,7 +75,7 @@ public class UsuarioController {
 
     @Operation(summary = "Cadastrar leitor", description = "Cria um cadastro de leitor. Informe nome, e-mail e telefone exclusivos, senha com pelo menos 8 caracteres sem espaços, data de nascimento e CEP. O endereço é completado pelo ViaCEP; o ID é gerado pela API.")
     @ApiResponses({@ApiResponse(responseCode = "201", description = "Leitor cadastrado com sucesso."),
-            @ApiResponse(responseCode = "400", description = "Os dados enviados não passaram pela validação."),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos ou JSON malformado/incompleto; confira as mensagens retornadas."),
             @ApiResponse(responseCode = "409", description = "A chave já foi usada, mas o registro correspondente foi removido.")})
     @PostMapping
     public ResponseEntity<EntityModel<Usuario>> cadastrarLeitor(
@@ -94,7 +94,7 @@ public class UsuarioController {
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Cadastro existente atualizado."),
             @ApiResponse(responseCode = "201", description = "Novo cadastro de leitor criado."),
             @ApiResponse(responseCode = "403", description = "Somente usuários Admin podem atualizar leitores."),
-            @ApiResponse(responseCode = "400", description = "Os dados enviados não passaram pela validação.")})
+            @ApiResponse(responseCode = "400", description = "Dados inválidos, JSON malformado/incompleto ou valor em formato incorreto.")})
     @SecurityRequirement(name = "ApiKeyAuth")
     @PutMapping("/{id}")
     public ResponseEntity<EntityModel<Usuario>> criarOuAtualizarLeitor(@Parameter(description = "UUID que identifica o leitor. Se ainda não existir, será usado para criá-lo.", example = "c4a7e291-6d53-4a8b-9f10-2b7d5e3a1c64") @PathVariable UUID id, @Valid @RequestBody Usuario usuario) {
