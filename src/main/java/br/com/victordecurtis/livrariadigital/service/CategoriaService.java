@@ -1,7 +1,10 @@
 package br.com.victordecurtis.livrariadigital.service;
 
 import br.com.victordecurtis.livrariadigital.model.Categoria;
+import br.com.victordecurtis.livrariadigital.handler.BusinessException;
 import br.com.victordecurtis.livrariadigital.repository.CategoriaRepository;
+import br.com.victordecurtis.livrariadigital.repository.LivroRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -10,10 +13,14 @@ import java.util.UUID;
 
 @Service
 public class CategoriaService {
-    private final CategoriaRepository repositorioCategorias;
+    private static final String ERRO_CATEGORIA_VINCULADA = "A categoria está vinculada a um ou mais livros e não pode ser removida. Atualize ou remova os livros vinculados antes de tentar novamente.";
 
-    public CategoriaService(CategoriaRepository repositorioCategorias) {
+    private final CategoriaRepository repositorioCategorias;
+    private final LivroRepository repositorioLivros;
+
+    public CategoriaService(CategoriaRepository repositorioCategorias, LivroRepository repositorioLivros) {
         this.repositorioCategorias = repositorioCategorias;
+        this.repositorioLivros = repositorioLivros;
     }
 
     public Page<Categoria> buscarTodos(Pageable paginacao) {
@@ -32,7 +39,15 @@ public class CategoriaService {
     }
 
     public void excluir(UUID id) {
-        repositorioCategorias.deleteById(id);
+        if (repositorioLivros.existsByCategoria_Id(id)) {
+            throw new BusinessException(ERRO_CATEGORIA_VINCULADA);
+        }
+
+        try {
+            repositorioCategorias.deleteById(id);
+        } catch (DataIntegrityViolationException excecao) {
+            throw new BusinessException(ERRO_CATEGORIA_VINCULADA);
+        }
     }
 
     public UpsertResult<Categoria> atualizarOuCriar(UUID id, Categoria dados) {
